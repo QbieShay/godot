@@ -59,10 +59,10 @@ void SpringArm::_notification(int p_what) {
 
 void SpringArm::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("get_current_spring_length"), &SpringArm::get_current_spring_length);
+	ClassDB::bind_method(D_METHOD("get_hit_length"), &SpringArm::get_hit_length);
 
-	ClassDB::bind_method(D_METHOD("set_spring_length", "length"), &SpringArm::set_spring_length);
-	ClassDB::bind_method(D_METHOD("get_spring_length"), &SpringArm::get_spring_length);
+	ClassDB::bind_method(D_METHOD("set_length", "length"), &SpringArm::set_length);
+	ClassDB::bind_method(D_METHOD("get_length"), &SpringArm::get_length);
 
 	ClassDB::bind_method(D_METHOD("set_shape", "shape"), &SpringArm::set_shape);
 	ClassDB::bind_method(D_METHOD("get_shape"), &SpringArm::get_shape);
@@ -79,11 +79,11 @@ void SpringArm::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "spring_length"), "set_spring_length", "get_spring_length");
 }
 
-float SpringArm::get_spring_length() const {
+float SpringArm::get_length() const {
 	return spring_length;
 }
 
-void SpringArm::set_spring_length(float p_length) {
+void SpringArm::set_length(float p_length) {
 	spring_length = p_length;
 }
 
@@ -115,7 +115,7 @@ void SpringArm::clear_excluded_objects() {
 	excluded_objects.clear();
 }
 
-float SpringArm::get_current_spring_length() {
+float SpringArm::get_hit_length() {
 	return current_spring_length;
 }
 

@@ -1920,6 +1920,38 @@ void RayCastSpatialGizmoPlugin::redraw(EditorSpatialGizmo *p_gizmo) {
 
 /////
 
+void SpringArmSpatialGizmoPlugin::redraw(EditorSpatialGizmo *p_gizmo) {
+
+    SpringArm *spring_arm = Object::cast_to<SpringArm>(p_gizmo->get_spatial_node());
+    p_gizmo->clear();
+
+    Vector<Vector3> lines;
+
+    lines.push_back(Vector3());
+    lines.push_back(spring_arm->get_transform().basis.get_axis(2) * spring_arm->get_length());
+
+    Color gizmo_color = EDITOR_GET("editors/3d_gizmos/gizmo_colors/shape");
+    Ref<Material> material = create_material("shape_material", gizmo_color);
+
+    add_lines(lines, material);
+    add_collision_segments(lines);
+}
+
+SpringArmSpatialGizmoPlugin::SpringArmSpatialGizmo() {
+    Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/shape", Color(0.5, 0.7, 1));
+    create_material("shape_material", gizmo_color);
+}
+
+bool SpringArmSpatialGizmoPlugin::has_gizmo(Spatial *p_spatial) {
+    return Object::cast_to<SpringArm>(p_spatial) != NULL;
+}
+
+SpringArmSpatialGizmoPlugin::get_name() const{
+    return "SpringArm"
+}
+
+/////
+
 VehicleWheelSpatialGizmoPlugin::VehicleWheelSpatialGizmoPlugin() {
 
 	Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/shape", Color(0.5, 0.7, 1));

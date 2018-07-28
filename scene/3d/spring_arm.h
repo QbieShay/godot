@@ -48,8 +48,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	void set_spring_length(float p_length);
-	float get_spring_length() const;
+	void set_length(float p_length);
+	float get_length() const;
 	void set_shape(Ref<Shape> p_shape);
 	Ref<Shape> get_shape() const;
 	void set_mask(uint32_t p_mask);
@@ -57,7 +57,7 @@ public:
 	void add_excluded_object(RID p_rid);
 	bool remove_excluded_object(RID p_rid);
 	void clear_excluded_objects();
-	float get_current_spring_length();
+	float get_hit_length();
 
 	SpringArm();
 
