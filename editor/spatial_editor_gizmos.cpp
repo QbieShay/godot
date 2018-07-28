@@ -4203,6 +4203,14 @@ Ref<SpatialEditorGizmo> SpatialEditorGizmos::get_gizmo(Spatial *p_spatial) {
 		Ref<RayCastSpatialGizmo> misg = memnew(RayCastSpatialGizmo(Object::cast_to<RayCast>(p_spatial)));
 		return misg;
 	}
+	if (Object::cast_to<SpringArm>(p_spatial)) {
+
+		print_line("found a springarm");
+
+		Ref<SpringArmSpatialGizmo> misg = memnew(SpringArmSpatialGizmo(Object::cast_to<SpringArm>(p_spatial)));
+		return misg;
+	}
+
 	/*
 	if (Object::cast_to<Portal>(p_spatial)) {
 
