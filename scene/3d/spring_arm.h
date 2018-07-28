@@ -42,6 +42,7 @@ class SpringArm : public Spatial {
 	bool keep_child_basis;
 	float current_spring_length;
 	uint32_t mask;
+	float margin;
 
 protected:
 	void _notification(int p_what);
@@ -58,6 +59,8 @@ public:
 	bool remove_excluded_object(RID p_rid);
 	void clear_excluded_objects();
 	float get_hit_length();
+	void set_margin(float p_margin);
+	float get_margin();
 
 	SpringArm();
 
