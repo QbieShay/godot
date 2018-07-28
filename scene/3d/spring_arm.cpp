@@ -37,7 +37,8 @@
 SpringArm::SpringArm() :
 		spring_length(1),
 		mask(1),
-		current_spring_length(0) {}
+		current_spring_length(0),
+		margin(0.01) {}
 
 void SpringArm::_notification(int p_what) {
 	switch (p_what) {
@@ -74,9 +75,13 @@ void SpringArm::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &SpringArm::set_mask);
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &SpringArm::get_mask);
 
+	ClassDB::bind_method(D_METHOD("set_margin", "margin"), &SpringArm::set_margin);
+	ClassDB::bind_method(D_METHOD("get_margin"), &SpringArm::get_margin);
+	
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask", "get_collision_mask");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "shape", PROPERTY_HINT_RESOURCE_TYPE, "Shape"), "set_shape", "get_shape");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "spring_length"), "set_length", "get_length");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "margin"), "set_margin", "get_margin");
 }
 
 float SpringArm::get_length() const {
@@ -106,6 +111,14 @@ uint32_t SpringArm::get_mask() {
 	return mask;
 }
 
+float SpringArm::get_margin(){
+	return margin;
+}
+
+void SpringArm::set_margin(float p_margin){
+	margin = p_margin;
+}
+
 void SpringArm::add_excluded_object(RID p_rid) {
 	excluded_objects.insert(p_rid);
 }
@@ -124,17 +137,27 @@ float SpringArm::get_hit_length() {
 
 void SpringArm::process_spring() {
 
-	if (shape.is_null())
-		return;
-
 	// From
 	real_t motion_delta(1);
 	real_t motion_delta_unsafe(1);
 
+	Vector3 motion;
 	const Vector3 cast_direction(get_global_transform().basis.xform(Vector3(0, 0, 1)));
-	const Vector3 motion(cast_direction * spring_length);
 
-	get_world()->get_direct_space_state()->cast_motion(shape->get_rid(), get_global_transform(), motion, 0, motion_delta, motion_delta_unsafe, excluded_objects, mask);
+	if (shape.is_null()){
+		Vector3 motion(cast_direction * (spring_length + margin));
+	}else{
+		Vector3 motion(cast_direction * spring_length);
+	}
+	if (shape.is_null()){
+		PhysicsDirectSpaceState::RayResult r;
+		bool intersected = get_world()->get_direct_space_state()->intersect_ray( get_global_transform().origin, get_global_transform().origin + motion, r, excluded_objects, mask);
+		if (!intersected){
+			motion_delta = get_global_transform().origin.distance_to(r.position)/(spring_length+margin);
+		}
+	}else{
+		get_world()->get_direct_space_state()->cast_motion(shape->get_rid(), get_global_transform(), motion, 0, motion_delta, motion_delta_unsafe, excluded_objects, mask);
+	}
 
 	current_spring_length = spring_length * motion_delta;
 	Transform childs_transform;
