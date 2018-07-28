@@ -1857,6 +1857,30 @@ RayCastSpatialGizmo::RayCastSpatialGizmo(RayCast *p_raycast) {
 }
 
 /////
+void SpringArmSpatialGizmo::redraw() {
+
+	clear();
+
+	Vector<Vector3> lines;
+
+	lines.push_back(Vector3());
+	lines.push_back(springarm->get_transform().basis.get_axis(2) * springarm->get_length());
+
+	Color gizmo_color = EDITOR_GET("editors/3d_gizmos/gizmo_colors/shape");
+	Ref<Material> material = create_material("shape_material", gizmo_color);
+
+	add_lines(lines, material);
+	add_collision_segments(lines);
+}
+
+SpringArmSpatialGizmo::SpringArmSpatialGizmo(SpringArm *p_springarm) {
+
+	set_spatial_node(p_springarm);
+	springarm = p_springarm;
+}
+
+/////
+
 
 void VehicleWheelSpatialGizmo::redraw() {
 

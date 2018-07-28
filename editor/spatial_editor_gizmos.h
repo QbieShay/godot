@@ -50,6 +50,7 @@
 #include "scene/3d/reflection_probe.h"
 #include "scene/3d/room_instance.h"
 #include "scene/3d/sprite_3d.h"
+#include "scene/3d/spring_arm.h"
 #include "scene/3d/vehicle_body.h"
 #include "scene/3d/visibility_notifier.h"
 
@@ -383,6 +384,17 @@ class RayCastSpatialGizmo : public EditorSpatialGizmo {
 public:
 	void redraw();
 	RayCastSpatialGizmo(RayCast *p_raycast = NULL);
+};
+
+class SpringArmSpatialGizmo : public EditorSpatialGizmo {
+
+	GDCLASS(SpringArmSpatialGizmo, EditorSpatialGizmo);
+
+	SpringArm *springarm;
+
+public:
+	void redraw();
+	SpringArmSpatialGizmo(SpringArm *p_raycast = NULL);
 };
 
 class VehicleWheelSpatialGizmo : public EditorSpatialGizmo {
