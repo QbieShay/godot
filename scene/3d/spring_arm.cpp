@@ -145,17 +145,17 @@ void SpringArm::process_spring() {
 	const Vector3 cast_direction(get_global_transform().basis.xform(Vector3(0, 0, 1)));
 
 	if (shape.is_null()){
-		Vector3 motion(cast_direction * (spring_length + margin));
-	}else{
-		Vector3 motion(cast_direction * spring_length);
-	}
-	if (shape.is_null()){
+		motion = Vector3(cast_direction * (spring_length));
 		PhysicsDirectSpaceState::RayResult r;
 		bool intersected = get_world()->get_direct_space_state()->intersect_ray( get_global_transform().origin, get_global_transform().origin + motion, r, excluded_objects, mask);
-		if (!intersected){
-			motion_delta = get_global_transform().origin.distance_to(r.position)/(spring_length+margin);
+		if (intersected){
+			float dist = get_global_transform().origin.distance_to(r.position);
+			dist -= margin;
+			motion_delta = dist/(spring_length);
+
 		}
 	}else{
+		motion = Vector3(cast_direction * spring_length);
 		get_world()->get_direct_space_state()->cast_motion(shape->get_rid(), get_global_transform(), motion, 0, motion_delta, motion_delta_unsafe, excluded_objects, mask);
 	}
 

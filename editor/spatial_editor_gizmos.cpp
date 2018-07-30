@@ -1928,10 +1928,9 @@ void SpringArmSpatialGizmoPlugin::redraw(EditorSpatialGizmo *p_gizmo) {
     Vector<Vector3> lines;
 
     lines.push_back(Vector3());
-    lines.push_back(spring_arm->get_transform().basis.get_axis(2) * spring_arm->get_length());
+    lines.push_back(Vector3(0,0,1.0) * springarm->get_length());
 
-    Color gizmo_color = EDITOR_GET("editors/3d_gizmos/gizmo_colors/shape");
-    Ref<Material> material = create_material("shape_material", gizmo_color);
+    Ref<SpatialMaterial> material = get_material("shape_material", p_gizmo);
 
     add_lines(lines, material);
     add_collision_segments(lines);
