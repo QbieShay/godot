@@ -1864,7 +1864,7 @@ void SpringArmSpatialGizmo::redraw() {
 	Vector<Vector3> lines;
 
 	lines.push_back(Vector3());
-	lines.push_back(springarm->get_transform().basis.get_axis(2) * springarm->get_length());
+	lines.push_back(Vector3(0,0,1.0) * springarm->get_length());
 
 	Color gizmo_color = EDITOR_GET("editors/3d_gizmos/gizmo_colors/shape");
 	Ref<Material> material = create_material("shape_material", gizmo_color);
