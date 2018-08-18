@@ -203,7 +203,7 @@ class SpringArmSpatialGizmoPlugin : public EditorSpatialGizmoPlugin {
 
 public:
     bool has_gizmo(Spatial *p_spatial);
-    String const get_name();
+    String get_name() const;
     void redraw(EditorSpatialGizmo *p_gizmo);
 
     SpringArmSpatialGizmoPlugin();
@@ -340,21 +340,6 @@ public:
 	void commit_handle(EditorSpatialGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false);
 
 	CollisionShapeSpatialGizmoPlugin();
-};
-
-
-class VehicleWheelSpatialGizmo : public EditorSpatialGizmo {
-
-class CollisionPolygonSpatialGizmoPlugin : public EditorSpatialGizmoPlugin {
-
-	GDCLASS(CollisionPolygonSpatialGizmoPlugin, EditorSpatialGizmoPlugin);
-
-public:
-	bool has_gizmo(Spatial *p_spatial);
-	String get_name() const;
-	void redraw(EditorSpatialGizmo *p_gizmo);
-
-	CollisionPolygonSpatialGizmoPlugin();
 };
 
 class NavigationMeshSpatialGizmoPlugin : public EditorSpatialGizmoPlugin {
