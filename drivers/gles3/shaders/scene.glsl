@@ -927,6 +927,14 @@ vec3 F0(float metallic, float specular, vec3 albedo) {
 	return mix(vec3(dielectric), albedo, vec3(metallic));
 }
 
+void light_postprocess(inout vec3 p_diffuse_light, inout vec3 p_specular_light){
+#if defined(USE_LIGHT_POST_SHADER_CODE)
+	/* clang-format off*/
+LIGHT_POST_SHADER_CODE
+    /* clang-format on*/
+#endif
+}
+
 void light_compute(vec3 N, vec3 L, vec3 V, vec3 B, vec3 T, vec3 light_color, vec3 attenuation, vec3 diffuse_color, vec3 transmission, float specular_blob_intensity, float roughness, float metallic, float specular, float rim, float rim_tint, float clearcoat, float clearcoat_gloss, float anisotropy, inout vec3 diffuse_light, inout vec3 specular_light) {
 
 #if defined(USE_LIGHT_SHADER_CODE)
@@ -1983,6 +1991,8 @@ FRAGMENT_SHADER_CODE
 #ifdef RENDER_DEPTH
 //nothing happens, so a tree-ssa optimizer will result in no fragment shader :)
 #else
+
+	light_postprocess(diffuse_light, specular_light);
 
 	specular_light *= reflection_multiplier;
 	ambient_light *= albedo; //ambient must be multiplied by albedo at the end

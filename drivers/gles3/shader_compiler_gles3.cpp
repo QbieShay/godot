@@ -507,6 +507,10 @@ String ShaderCompilerGLES3::_dump_node_code(SL::Node *p_node, int p_level, Gener
 					_dump_function_deps(pnode, fnode->name, function_code, r_gen_code.fragment_global, added_fragment);
 					r_gen_code.light = function_code[light_name];
 				}
+				if (fnode->name == light_post_name) {
+					_dump_function_deps(pnode, fnode->name, function_code, r_gen_code.fragment_global, added_fragment);
+					r_gen_code.light_post = function_code[light_post_name];
+				}
 			}
 
 			//code+=dump_node_code(pnode->body,p_level);
@@ -884,6 +888,11 @@ ShaderCompilerGLES3::ShaderCompilerGLES3() {
 	actions[VS::SHADER_SPATIAL].renames["DIFFUSE_LIGHT"] = "diffuse_light";
 	actions[VS::SHADER_SPATIAL].renames["SPECULAR_LIGHT"] = "specular_light";
 
+	//for light post
+
+	actions[VS::SHADER_SPATIAL].renames["TOTAL_DIFFUSE_LIGHT"] = "p_diffuse_light";
+	actions[VS::SHADER_SPATIAL].renames["TOTAL_SPECULAR_LIGHT"] = "p_specular_light";
+
 	actions[VS::SHADER_SPATIAL].usage_defines["TANGENT"] = "#define ENABLE_TANGENT_INTERP\n";
 	actions[VS::SHADER_SPATIAL].usage_defines["BINORMAL"] = "@TANGENT";
 	actions[VS::SHADER_SPATIAL].usage_defines["RIM"] = "#define LIGHT_USE_RIM\n";
@@ -909,6 +918,9 @@ ShaderCompilerGLES3::ShaderCompilerGLES3() {
 
 	actions[VS::SHADER_SPATIAL].usage_defines["DIFFUSE_LIGHT"] = "#define USE_LIGHT_SHADER_CODE\n";
 	actions[VS::SHADER_SPATIAL].usage_defines["SPECULAR_LIGHT"] = "#define USE_LIGHT_SHADER_CODE\n";
+
+	actions[VS::SHADER_SPATIAL].usage_defines["TOTAL_DIFFUSE_LIGHT"] = "#define USE_LIGHT_POST_SHADER_CODE\n";
+	actions[VS::SHADER_SPATIAL].usage_defines["TOTAL_SPECULAR_LIGHT"] = "#define USE_LIGHT_POST_SHADER_CODE\n";
 
 	actions[VS::SHADER_SPATIAL].render_mode_defines["skip_vertex_transform"] = "#define SKIP_TRANSFORM_USED\n";
 	actions[VS::SHADER_SPATIAL].render_mode_defines["world_vertex_coords"] = "#define VERTEX_WORLD_COORDS_USED\n";
@@ -966,6 +978,7 @@ ShaderCompilerGLES3::ShaderCompilerGLES3() {
 	vertex_name = "vertex";
 	fragment_name = "fragment";
 	light_name = "light";
+	light_post_name = "light_post";
 	time_name = "TIME";
 
 	List<String> func_list;

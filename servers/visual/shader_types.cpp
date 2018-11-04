@@ -145,6 +145,10 @@ ShaderTypes::ShaderTypes() {
 	shader_modes[VS::SHADER_SPATIAL].functions["light"].built_ins["OUTPUT_IS_SRGB"] = constt(ShaderLanguage::TYPE_BOOL);
 
 	shader_modes[VS::SHADER_SPATIAL].functions["light"].can_discard = true;
+	// light post
+
+	shader_modes[VS::SHADER_SPATIAL].functions["light_post"].built_ins["TOTAL_DIFFUSE_LIGHT"] = ShaderLanguage::TYPE_VEC3;
+	shader_modes[VS::SHADER_SPATIAL].functions["light_post"].built_ins["TOTAL_SPECULAR_LIGHT"] = ShaderLanguage::TYPE_VEC3;
 
 	//order used puts first enum mode (default) first
 	shader_modes[VS::SHADER_SPATIAL].modes.push_back("blend_mix");

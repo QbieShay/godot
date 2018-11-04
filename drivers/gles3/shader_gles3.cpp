@@ -242,6 +242,7 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 	//keep them around during the function
 	CharString code_string;
 	CharString code_string2;
+	CharString code_string3;
 	CharString code_globals;
 	CharString material_string;
 
@@ -387,18 +388,26 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 	strings.push_back(fragment_code2.get_data());
 
 	if (cc) {
-		code_string = cc->light.ascii();
+		code_string = cc->light_post.ascii();
 		strings.push_back(code_string.get_data());
 	}
 
 	strings.push_back(fragment_code3.get_data());
 
 	if (cc) {
-		code_string2 = cc->fragment.ascii();
+		code_string2 = cc->light.ascii();
 		strings.push_back(code_string2.get_data());
 	}
 
 	strings.push_back(fragment_code4.get_data());
+	print_line(fragment_code4.get_data());
+	CRASH_NOW();
+	if (cc) {
+		code_string3 = cc->fragment.ascii();
+		strings.push_back(code_string3.get_data());
+	}
+
+	strings.push_back(fragment_code5.get_data());
 
 #ifdef DEBUG_SHADER
 	DEBUG_PRINT("\nFragment Globals:\n\n" + String(code_globals.get_data()));
@@ -636,6 +645,7 @@ void ShaderGLES3::setup(const char **p_conditional_defines, int p_conditional_co
 		String material_tag = "\nMATERIAL_UNIFORMS";
 		String code_tag = "\nFRAGMENT_SHADER_CODE";
 		String light_code_tag = "\nLIGHT_SHADER_CODE";
+		String light_post_code_tag = "\nLIGHT_POST_SHADER_CODE";
 		String code = fragment_code;
 		int cpos = code.find(material_tag);
 		if (cpos == -1) {
@@ -654,7 +664,7 @@ void ShaderGLES3::setup(const char **p_conditional_defines, int p_conditional_co
 				//print_line("CODE1:\n"+String(fragment_code1.get_data()));
 
 				String code2 = code.substr(cpos + globals_tag.length(), code.length());
-				cpos = code2.find(light_code_tag);
+				cpos = code2.find(light_post_code_tag);
 
 				if (cpos == -1) {
 					fragment_code2 = code2.ascii();
@@ -663,16 +673,24 @@ void ShaderGLES3::setup(const char **p_conditional_defines, int p_conditional_co
 					fragment_code2 = code2.substr(0, cpos).ascii();
 					//print_line("CODE2:\n"+String(fragment_code2.get_data()));
 
-					String code3 = code2.substr(cpos + light_code_tag.length(), code2.length());
+					String code3 = code2.substr(cpos + light_post_code_tag.length(), code2.length());
 
-					cpos = code3.find(code_tag);
+					//cpos = code3.find(code_tag);
+					cpos = code3.find(light_code_tag);
 					if (cpos == -1) {
 						fragment_code3 = code3.ascii();
 					} else {
 
 						fragment_code3 = code3.substr(0, cpos).ascii();
+						String code4 = code3.substr(cpos + light_code_tag.length(), code3.length());
 						//print_line("CODE3:\n"+String(fragment_code3.get_data()));
-						fragment_code4 = code3.substr(cpos + code_tag.length(), code3.length()).ascii();
+						cpos = code4.find(code_tag);
+						if (cpos == -1) {
+							fragment_code4 = code4.ascii();
+						} else {
+							fragment_code4 = code4.substr(0, cpos).ascii();
+							fragment_code5 = code4.substr(cpos + code_tag.length(), code4.length()).ascii();
+						}
 						//print_line("CODE4:\n"+String(fragment_code4.get_data()));
 					}
 				}

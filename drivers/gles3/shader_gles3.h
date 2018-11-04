@@ -113,6 +113,7 @@ private:
 		String fragment;
 		String fragment_globals;
 		String light;
+		String light_post;
 		String uniforms;
 		uint32_t version;
 		Vector<StringName> texture_uniforms;
@@ -179,6 +180,7 @@ private:
 	CharString fragment_code2;
 	CharString fragment_code3;
 	CharString fragment_code4;
+	CharString fragment_code5;
 
 	CharString vertex_code0;
 	CharString vertex_code1;

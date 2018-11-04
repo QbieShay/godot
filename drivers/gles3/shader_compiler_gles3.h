@@ -63,6 +63,7 @@ public:
 		String fragment_global;
 		String fragment;
 		String light;
+		String light_post;
 
 		bool uses_fragment_time;
 		bool uses_vertex_time;
@@ -85,6 +86,7 @@ private:
 	StringName vertex_name;
 	StringName fragment_name;
 	StringName light_name;
+	StringName light_post_name;
 	StringName time_name;
 
 	Set<StringName> used_name_defines;
