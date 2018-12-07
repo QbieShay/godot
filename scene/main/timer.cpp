@@ -50,30 +50,13 @@ void Timer::_notification(int p_what) {
 		case NOTIFICATION_INTERNAL_PROCESS: {
 			if (timer_process_mode == TIMER_PROCESS_PHYSICS || !is_processing_internal())
 				return;
-			time_left -= get_process_delta_time();
-
-			if (time_left < 0) {
-				if (!one_shot)
-					time_left += wait_time;
-				else
-					stop();
-
-				emit_signal("timeout");
-			}
+			tick(get_process_delta_time());
 
 		} break;
 		case NOTIFICATION_INTERNAL_PHYSICS_PROCESS: {
 			if (timer_process_mode == TIMER_PROCESS_IDLE || !is_physics_processing_internal())
 				return;
-			time_left -= get_physics_process_delta_time();
-
-			if (time_left < 0) {
-				if (!one_shot)
-					time_left += wait_time;
-				else
-					stop();
-				emit_signal("timeout");
-			}
+			tick(get_physics_process_delta_time());
 
 		} break;
 	}
@@ -177,6 +160,17 @@ void Timer::_set_process(bool p_process, bool p_force) {
 	processing = p_process;
 }
 
+void Timer::tick(float p_delta) {
+	time_left -= p_delta;
+	if (time_left < 0) {
+		if (!one_shot)
+			time_left += wait_time;
+		else
+			stop();
+		emit_signal("timeout");
+	}
+}
+
 void Timer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_wait_time", "time_sec"), &Timer::set_wait_time);
@@ -197,6 +191,8 @@ void Timer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_stopped"), &Timer::is_stopped);
 
 	ClassDB::bind_method(D_METHOD("get_time_left"), &Timer::get_time_left);
+
+	ClassDB::bind_method(D_METHOD("tick", "delta"), &Timer::tick);
 
 	ClassDB::bind_method(D_METHOD("set_timer_process_mode", "mode"), &Timer::set_timer_process_mode);
 	ClassDB::bind_method(D_METHOD("get_timer_process_mode"), &Timer::get_timer_process_mode);
