@@ -185,6 +185,7 @@ Validate extension JSON: Error: Field 'classes/PhysicsServer3DRenderingServerHan
 Intentional compatibility breakage to be consistent with the new non-virtual set_vertex/set_normal.
 
 
+<<<<<<< HEAD
 GH-79965
 --------
 Validate extension JSON: JSON file: Field was added in a way that breaks compatibility 'classes/PopupMenu/methods/clear': arguments
@@ -287,3 +288,10 @@ Validate extension JSON: Error: Field 'classes/RenderingDevice/methods/shader_ge
 Validate extension JSON: Error: Field 'classes/SurfaceTool/methods/commit/arguments/1': meta changed value in new API, from "uint32" to "uint64".
 
 Surface format was increased to 64 bits from 32 bits. Compatibility methods registered. 
+
+GH-79527
+--------
+Validate extension JSON: Error: Field 'classes/ParticleProcessMaterial/properties/orbit_velocity_curve': type changed value in new API, from "CurveTexture" to "CurveTexture,CurveXYZTexture".
+
+Added accepted curve type from only CurveTexture to CurveXYZTexture.
+

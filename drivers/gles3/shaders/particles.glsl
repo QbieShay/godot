@@ -78,7 +78,10 @@ layout(std140) uniform FrameData { //ubo:0
 	float delta;
 
 	float particle_size;
-	float pad0;
+	vec3 emitter_velocity;
+
+	float amount_ratio;
+	float interp_to_end;
 	float pad1;
 	float pad2;
 
