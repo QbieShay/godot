@@ -2707,6 +2707,7 @@ RendererCanvasRenderRD::RendererCanvasRenderRD() {
 		actions.renames["INSTANCE_CUSTOM"] = "instance_custom";
 
 		actions.renames["COLOR"] = "color";
+		actions.renames["MODULATE"] = "modulate";
 		actions.renames["NORMAL"] = "normal";
 		actions.renames["NORMAL_MAP"] = "normal_map";
 		actions.renames["NORMAL_MAP_DEPTH"] = "normal_map_depth";
@@ -2743,6 +2744,7 @@ RendererCanvasRenderRD::RendererCanvasRenderRD() {
 		actions.usage_defines["LIGHT"] = "#define LIGHT_SHADER_CODE_USED\n";
 		actions.usage_defines["SPECULAR_SHININESS"] = "#define SPECULAR_SHININESS_USED\n";
 		actions.usage_defines["POINT_SIZE"] = "#define USE_POINT_SIZE\n";
+		actions.usage_defines["MODULATE"] = "#define MODULATE_USED\n";
 
 		actions.render_mode_defines["skip_vertex_transform"] = "#define SKIP_TRANSFORM_USED\n";
 		actions.render_mode_defines["unshaded"] = "#define MODE_UNSHADED\n";

@@ -51,13 +51,13 @@ struct DrawData {
 	vec2 uvs[3];
 	uint colors[6];
 #else
-	vec4 modulation;
 	vec4 ninepatch_margins;
 	vec4 dst_rect; //for built-in rect and UV
 	vec4 src_rect;
 	vec2 pad;
 
 #endif
+	vec4 modulation;
 	vec2 color_texture_pixel_size;
 	uint lights[4];
 };
