@@ -384,14 +384,13 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 		union {
 			//rect
 			struct {
-				float modulation[4];
 				union {
 					float msdf[4];
 					float ninepatch_margins[4];
 				};
 				float dst_rect[4];
 				float src_rect[4];
-				float pad[2];
+				float pad[6];
 			};
 			//primitive
 			struct {
@@ -400,6 +399,8 @@ class RendererCanvasRenderRD : public RendererCanvasRender {
 				uint32_t colors[6]; // colors encoded as half
 			};
 		};
+
+		float modulation[4];
 		float color_texture_pixel_size[2];
 		uint32_t lights[4];
 	};

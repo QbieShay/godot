@@ -449,7 +449,7 @@ void RendererCanvasRenderRD::_prepare_item_data(RID p_render_target, const Item 
 	bool use_linear_colors = texture_storage->render_target_is_using_hdr(p_render_target);
 
 	for (int i = 0; i < 4; i++) {
-		per_instance_buffer.modulation[i] = 0;
+		per_instance_buffer.colors[i] = 0;
 		per_instance_buffer.ninepatch_margins[i] = 0;
 		per_instance_buffer.src_rect[i] = 0;
 		per_instance_buffer.dst_rect[i] = 0;
@@ -504,7 +504,13 @@ void RendererCanvasRenderRD::_prepare_item_data(RID p_render_target, const Item 
 		}
 
 		per_instance_buffer.flags = base_flags | (per_instance_buffer.flags & (FLAGS_DEFAULT_NORMAL_MAP_USED | FLAGS_DEFAULT_SPECULAR_MAP_USED)); // Reset on each command for sanity, keep canvastexture binding config.
-
+		if (use_linear_colors) {
+			base_color = base_color.srgb_to_linear();
+		}
+		per_instance_buffer.modulation[0] = base_color.r;
+		per_instance_buffer.modulation[1] = base_color.g;
+		per_instance_buffer.modulation[2] = base_color.b;
+		per_instance_buffer.modulation[3] = base_color.a;
 		switch (c->type) {
 			case Item::Command::TYPE_RECT: {
 				const Item::CommandRect *rect = static_cast<const Item::CommandRect *>(c);
@@ -576,16 +582,6 @@ void RendererCanvasRenderRD::_prepare_item_data(RID p_render_target, const Item 
 					per_instance_buffer.flags |= FLAGS_USE_LCD;
 				}
 
-				Color modulated = rect->modulate * base_color;
-				if (use_linear_colors) {
-					modulated = modulated.srgb_to_linear();
-				}
-
-				per_instance_buffer.modulation[0] = modulated.r;
-				per_instance_buffer.modulation[1] = modulated.g;
-				per_instance_buffer.modulation[2] = modulated.b;
-				per_instance_buffer.modulation[3] = modulated.a;
-
 				per_instance_buffer.src_rect[0] = src_rect.position.x;
 				per_instance_buffer.src_rect[1] = src_rect.position.y;
 				per_instance_buffer.src_rect[2] = src_rect.size.width;
@@ -624,16 +620,6 @@ void RendererCanvasRenderRD::_prepare_item_data(RID p_render_target, const Item 
 						src_rect = Rect2(0, 0, 1, 1);
 					}
 				}
-
-				Color modulated = np->color * base_color;
-				if (use_linear_colors) {
-					modulated = modulated.srgb_to_linear();
-				}
-
-				per_instance_buffer.modulation[0] = modulated.r;
-				per_instance_buffer.modulation[1] = modulated.g;
-				per_instance_buffer.modulation[2] = modulated.b;
-				per_instance_buffer.modulation[3] = modulated.a;
 
 				per_instance_buffer.src_rect[0] = src_rect.position.x;
 				per_instance_buffer.src_rect[1] = src_rect.position.y;
@@ -675,16 +661,6 @@ void RendererCanvasRenderRD::_prepare_item_data(RID p_render_target, const Item 
 
 				_prepare_canvas_texture_data(polygon->texture, current_filter, current_repeat, last_texture, per_instance_buffer, texpixel_size);
 
-				Color color = base_color;
-				if (use_linear_colors) {
-					color = color.srgb_to_linear();
-				}
-
-				per_instance_buffer.modulation[0] = color.r;
-				per_instance_buffer.modulation[1] = color.g;
-				per_instance_buffer.modulation[2] = color.b;
-				per_instance_buffer.modulation[3] = color.a;
-
 				for (int j = 0; j < 4; j++) {
 					per_instance_buffer.src_rect[j] = 0;
 					per_instance_buffer.dst_rect[j] = 0;
@@ -708,7 +684,7 @@ void RendererCanvasRenderRD::_prepare_item_data(RID p_render_target, const Item 
 					per_instance_buffer.points[j * 2 + 1] = primitive->points[j].y;
 					per_instance_buffer.uvs[j * 2 + 0] = primitive->uvs[j].x;
 					per_instance_buffer.uvs[j * 2 + 1] = primitive->uvs[j].y;
-					Color col = primitive->colors[j] * base_color;
+					Color col = primitive->colors[j];
 					if (use_linear_colors) {
 						col = col.srgb_to_linear();
 					}
@@ -724,7 +700,7 @@ void RendererCanvasRenderRD::_prepare_item_data(RID p_render_target, const Item 
 						per_instance_buffer.points[j * 2 + 1] = primitive->points[j + 1].y;
 						per_instance_buffer.uvs[j * 2 + 0] = primitive->uvs[j + 1].x;
 						per_instance_buffer.uvs[j * 2 + 1] = primitive->uvs[j + 1].y;
-						Color col = primitive->colors[j + 1] * base_color;
+						Color col = primitive->colors[j + 1];
 						if (use_linear_colors) {
 							col = col.srgb_to_linear();
 						}
@@ -832,16 +808,6 @@ void RendererCanvasRenderRD::_prepare_item_data(RID p_render_target, const Item 
 				_prepare_canvas_texture_data(texture, current_filter, current_repeat, last_texture, per_instance_buffer, texpixel_size);
 
 				uint32_t surf_count = mesh_storage->mesh_get_surface_count(mesh);
-
-				Color modulated = modulate * base_color;
-				if (use_linear_colors) {
-					modulated = modulated.srgb_to_linear();
-				}
-
-				per_instance_buffer.modulation[0] = modulated.r;
-				per_instance_buffer.modulation[1] = modulated.g;
-				per_instance_buffer.modulation[2] = modulated.b;
-				per_instance_buffer.modulation[3] = modulated.a;
 
 				for (int j = 0; j < 4; j++) {
 					per_instance_buffer.src_rect[j] = 0;
@@ -2707,6 +2673,7 @@ RendererCanvasRenderRD::RendererCanvasRenderRD() {
 		actions.renames["INSTANCE_CUSTOM"] = "instance_custom";
 
 		actions.renames["COLOR"] = "color";
+		actions.renames["MODULATE"] = "modulate";
 		actions.renames["NORMAL"] = "normal";
 		actions.renames["NORMAL_MAP"] = "normal_map";
 		actions.renames["NORMAL_MAP_DEPTH"] = "normal_map_depth";
@@ -2743,6 +2710,7 @@ RendererCanvasRenderRD::RendererCanvasRenderRD() {
 		actions.usage_defines["LIGHT"] = "#define LIGHT_SHADER_CODE_USED\n";
 		actions.usage_defines["SPECULAR_SHININESS"] = "#define SPECULAR_SHININESS_USED\n";
 		actions.usage_defines["POINT_SIZE"] = "#define USE_POINT_SIZE\n";
+		actions.usage_defines["MODULATE"] = "#define MODULATE_USED\n";
 
 		actions.render_mode_defines["skip_vertex_transform"] = "#define SKIP_TRANSFORM_USED\n";
 		actions.render_mode_defines["unshaded"] = "#define MODE_UNSHADED\n";

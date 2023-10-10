@@ -45,6 +45,7 @@ vec3 srgb_to_linear(vec3 color) {
 void main() {
 	const DrawData draw_data = draw_data_buffer.data[draw_data_index.index];
 	vec4 instance_custom = vec4(0.0);
+	vec4 modulate = draw_data.modulation;
 #ifdef USE_PRIMITIVE
 
 	//weird bug,
@@ -76,7 +77,6 @@ void main() {
 	if (bool(draw_data.flags & FLAGS_CONVERT_ATTRIBUTES_TO_LINEAR)) {
 		color.rgb = srgb_to_linear(color.rgb);
 	}
-	color *= draw_data.modulation;
 	vec2 uv = uv_attrib;
 
 	uvec4 bones = bone_attrib;
@@ -87,7 +87,7 @@ void main() {
 	vec2 vertex_base = vertex_base_arr[gl_VertexIndex];
 
 	vec2 uv = draw_data.src_rect.xy + abs(draw_data.src_rect.zw) * ((draw_data.flags & FLAGS_TRANSPOSE_RECT) != 0 ? vertex_base.yx : vertex_base.xy);
-	vec4 color = draw_data.modulation;
+	vec4 color = vec4(1.0);
 	vec2 vertex = draw_data.dst_rect.xy + abs(draw_data.dst_rect.zw) * mix(vertex_base, vec2(1.0, 1.0) - vertex_base, lessThan(draw_data.src_rect.zw, vec2(0.0, 0.0)));
 	uvec4 bones = uvec4(0, 0, 0, 0);
 
@@ -720,6 +720,10 @@ void main() {
 
 #ifdef MODE_LIGHT_ONLY
 	color.a *= light_only_alpha;
+#endif
+
+#ifndef MODULATE_USED
+	color *= draw_data.modulation;
 #endif
 
 	frag_color = color;
