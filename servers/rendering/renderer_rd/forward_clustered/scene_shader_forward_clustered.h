@@ -106,7 +106,8 @@ public:
 			BLEND_MODE_ADD,
 			BLEND_MODE_SUB,
 			BLEND_MODE_MUL,
-			BLEND_MODE_ALPHA_TO_COVERAGE
+			BLEND_MODE_ALPHA_TO_COVERAGE,
+			BLEND_MODE_PREMUL_ALPHA,
 		};
 
 		enum DepthDraw {
@@ -182,6 +183,7 @@ public:
 		bool writes_modelview_or_projection = false;
 		bool uses_world_coordinates = false;
 		bool uses_screen_texture_mipmaps = false;
+		bool uses_premul_alpha = false;
 		Cull cull_mode = CULL_DISABLED;
 
 		uint64_t last_pass = 0;

@@ -159,6 +159,7 @@ void SceneShaderForwardClustered::ShaderData::set_code(const String &p_code) {
 	uses_fragment_time = gen_code.uses_fragment_time;
 	uses_normal |= uses_normal_map;
 	uses_tangent |= uses_normal_map;
+	uses_premul_alpha = gen_code.uses_premul_alpha;
 
 #if 0
 	print_line("**compiling shader:");
@@ -185,6 +186,10 @@ void SceneShaderForwardClustered::ShaderData::set_code(const String &p_code) {
 	texture_uniforms = gen_code.texture_uniforms;
 
 	//blend modes
+
+	if (uses_premul_alpha) {
+		blend_mode = BLEND_MODE_PREMUL_ALPHA;
+	}
 
 	// if any form of Alpha Antialiasing is enabled, set the blend mode to alpha to coverage
 	if (alpha_antialiasing_mode != ALPHA_ANTIALIASING_OFF) {
@@ -244,6 +249,16 @@ void SceneShaderForwardClustered::ShaderData::set_code(const String &p_code) {
 			blend_attachment.dst_color_blend_factor = RD::BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 			blend_attachment.src_alpha_blend_factor = RD::BLEND_FACTOR_ONE;
 			blend_attachment.dst_alpha_blend_factor = RD::BLEND_FACTOR_ZERO;
+		} break;
+		case BLEND_MODE_PREMUL_ALPHA: {
+			blend_attachment.enable_blend = true;
+			blend_attachment.alpha_blend_op = RD::BLEND_OP_ADD;
+			blend_attachment.color_blend_op = RD::BLEND_OP_ADD;
+			blend_attachment.src_color_blend_factor = RD::BLEND_FACTOR_ONE;
+			blend_attachment.dst_color_blend_factor = RD::BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			blend_attachment.src_alpha_blend_factor = RD::BLEND_FACTOR_ONE;
+			blend_attachment.dst_alpha_blend_factor = RD::BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			uses_blend_alpha = true;
 		}
 	}
 
@@ -592,6 +607,7 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		actions.renames["NORMAL_MAP_DEPTH"] = "normal_map_depth";
 		actions.renames["ALBEDO"] = "albedo";
 		actions.renames["ALPHA"] = "alpha";
+		actions.renames["PREMUL_ALPHA"] = "premul_alpha";
 		actions.renames["METALLIC"] = "metallic";
 		actions.renames["SPECULAR"] = "specular";
 		actions.renames["ROUGHNESS"] = "roughness";
@@ -669,6 +685,7 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		actions.usage_defines["COLOR"] = "#define COLOR_USED\n";
 		actions.usage_defines["INSTANCE_CUSTOM"] = "#define ENABLE_INSTANCE_CUSTOM\n";
 		actions.usage_defines["POSITION"] = "#define OVERRIDE_POSITION\n";
+		actions.usage_defines["PREMUL_ALPHA"] = "#define PREMUL_ALPHA_USED\n";
 
 		actions.usage_defines["ALPHA_SCISSOR_THRESHOLD"] = "#define ALPHA_SCISSOR_USED\n";
 		actions.usage_defines["ALPHA_HASH_SCALE"] = "#define ALPHA_HASH_USED\n";

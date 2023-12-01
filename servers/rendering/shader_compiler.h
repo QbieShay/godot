@@ -84,6 +84,7 @@ public:
 		bool uses_screen_texture;
 		bool uses_depth_texture;
 		bool uses_normal_roughness_texture;
+		bool uses_premul_alpha;
 	};
 
 	struct DefaultIdentifierActions {
@@ -115,6 +116,7 @@ private:
 	const ShaderLanguage::FunctionNode *function = nullptr;
 	StringName current_func_name;
 	StringName time_name;
+	StringName premul_alpha_name;
 	HashSet<StringName> texture_functions;
 
 	HashSet<StringName> used_name_defines;
