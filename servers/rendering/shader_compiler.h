@@ -84,7 +84,6 @@ public:
 		bool uses_screen_texture;
 		bool uses_depth_texture;
 		bool uses_normal_roughness_texture;
-		bool uses_premul_alpha;
 	};
 
 	struct DefaultIdentifierActions {

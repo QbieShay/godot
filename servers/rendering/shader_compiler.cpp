@@ -965,10 +965,6 @@ String ShaderCompiler::_dump_node_code(const SL::Node *p_node, int p_level, Gene
 				}
 			}
 
-			if (vnode->name == premul_alpha_name) {
-				r_gen_code.uses_premul_alpha = true;
-			}
-
 			if (vnode->name == time_name) {
 				if (p_actions.entry_point_stages.has(current_func_name) && p_actions.entry_point_stages[current_func_name] == STAGE_VERTEX) {
 					r_gen_code.uses_vertex_time = true;
