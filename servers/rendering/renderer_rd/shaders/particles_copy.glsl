@@ -73,6 +73,20 @@ params;
 #define TRANSFORM_ALIGN_Z_BILLBOARD 1
 #define TRANSFORM_ALIGN_Y_TO_VELOCITY 2
 #define TRANSFORM_ALIGN_Z_BILLBOARD_Y_TO_VELOCITY 3
+#define TRANSFORM_ALIGN_Z_BILLBOARD_CUSTOM 4
+
+mat4 rotationMatrix(vec3 axis, float angle)
+{
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+    
+    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0);
+}
 
 void main() {
 #ifdef MODE_FILL_SORT_BUFFER
@@ -194,6 +208,16 @@ void main() {
 				txform[2].xyz = params.sort_direction * length(txform[2]);
 
 			} break;
+			case TRANSFORM_ALIGN_Z_BILLBOARD_CUSTOM: {
+				mat3 local = mat3(normalize(cross(params.align_up, params.sort_direction)), params.align_up, params.sort_direction);
+				float angle = particles.data[particle].custom.x;
+				local[0] = vec3(vec4(local.x, 0.0) * rotationMatrix(vec3 params.sort_direction, angle));
+				local[1] = vec3(vec4(local.y, 0.0) * rotationMatrix(vec3 params.sort_direction, angle));
+				local = local * mat3(txform);
+				txform[0].xyz = local[0];
+				txform[1].xyz = local[1];
+				txform[2].xyz = local[2];
+			}break;
 		}
 
 		txform[3].xyz += particles.data[particle].velocity * params.frame_remainder;
