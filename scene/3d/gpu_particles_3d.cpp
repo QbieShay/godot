@@ -469,6 +469,23 @@ void GPUParticles3D::_validate_property(PropertyInfo &p_property) const {
 	if (p_property.name == "seed" && !use_fixed_seed) {
 		p_property.usage = PROPERTY_USAGE_NONE;
 	}
+	if (p_property.name == "transform_align_use_velocity") {
+		if (transform_align == RS::PARTICLES_TRANSFORM_ALIGN_DISABLED || RS::PARTICLES_TRANSFORM_ALIGN_Z_BILLBOARD ||
+				RS::PARTICLES_TRANSFORM_ALIGN_Y_TO_VELOCITY || RS::PARTICLES_TRANSFORM_ALIGN_Z_BILLBOARD_Y_TO_VELOCITY) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	}
+	if (p_property.name == "transform_align_rotation_axis") {
+		if (transform_align == RS::PARTICLES_TRANSFORM_ALIGN_DISABLED || RS::PARTICLES_TRANSFORM_ALIGN_Z_BILLBOARD ||
+				RS::PARTICLES_TRANSFORM_ALIGN_Y_TO_VELOCITY || RS::PARTICLES_TRANSFORM_ALIGN_Z_BILLBOARD_Y_TO_VELOCITY) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	}
+	if (p_property.name == "transform_align_custom_src" && !use_fixed_seed) {
+		if (!(transform_align == RS::PARTICLES_TRANSFORM_ALIGN_Z_BILLBOARD || RS::PARTICLES_TRANSFORM_ALIGN_ROTATE_AROUND_AXIS)) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	}
 }
 
 void GPUParticles3D::request_particles_process(real_t p_requested_process_time) {
@@ -660,13 +677,12 @@ uint32_t GPUParticles3D::compute_align_flags() const {
 	return uint32_t(transform_align_use_velocity) & uint32_t(1);
 }
 
-void GPUParticles3D::set_transform_align_use_velocity(bool p_align_to_velocity){
+void GPUParticles3D::set_transform_align_use_velocity(bool p_align_to_velocity) {
 	transform_align_use_velocity = p_align_to_velocity;
 	RS::get_singleton()->particles_set_transform_align_flags(particles, compute_align_flags());
-	
 }
 
-bool GPUParticles3D::get_transform_align_use_velocity() const{
+bool GPUParticles3D::get_transform_align_use_velocity() const {
 	return transform_align_use_velocity;
 }
 
@@ -850,7 +866,6 @@ void GPUParticles3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_transform_align_use_velocity", "align_use_velocity"), &GPUParticles3D::set_transform_align_use_velocity);
 	ClassDB::bind_method(D_METHOD("get_transform_align_use_velocity"), &GPUParticles3D::get_transform_align_use_velocity);
 
-	
 	ClassDB::bind_method(D_METHOD("convert_from_particles", "particles"), &GPUParticles3D::convert_from_particles);
 
 	ClassDB::bind_method(D_METHOD("set_amount_ratio", "ratio"), &GPUParticles3D::set_amount_ratio);
@@ -885,7 +900,7 @@ void GPUParticles3D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "visibility_aabb", PROPERTY_HINT_NONE, "suffix:m"), "set_visibility_aabb", "get_visibility_aabb");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "local_coords"), "set_use_local_coordinates", "get_use_local_coordinates");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "draw_order", PROPERTY_HINT_ENUM, "Index,Lifetime,Reverse Lifetime,View Depth"), "set_draw_order", "get_draw_order");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "transform_align", PROPERTY_HINT_ENUM, "Disabled,Z-Billboard,Y to Velocity,Z-Billboard + Y to Velocity,Rotate around Axis, Local Billboard"), "set_transform_align", "get_transform_align");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "transform_align", PROPERTY_HINT_ENUM, "Disabled,Billboard,Align to Velocity,Trails,Rotate around Axis, Local Billboard"), "set_transform_align", "get_transform_align");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "transform_align_custom_src", PROPERTY_HINT_ENUM, "Disabled, X, Y, Z, W"), "set_transform_align_custom_src", "get_transform_align_custom_src");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "transform_align_rotation_axis", PROPERTY_HINT_ENUM, "X, Y, Z"), "set_transform_align_rotation_axis", "get_transform_align_rotation_axis");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transform_align_use_velocity"), "set_transform_align_use_velocity", "get_transform_align_use_velocity");

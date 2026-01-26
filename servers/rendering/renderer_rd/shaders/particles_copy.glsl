@@ -93,7 +93,6 @@ params;
 
 #define ALIGN_FLAGS_ALIGN_TO_VELOCITY uint(1);
 
-
 void main() {
 #ifdef MODE_FILL_SORT_BUFFER
 
@@ -200,8 +199,7 @@ void main() {
 				mat3 rotated = mat3(
 						oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s,
 						oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s,
-						oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c
-					);
+						oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c);
 				vec3 new_up = rotated * params.align_up;
 				mat3 local = mat3(normalize(cross(new_up, params.sort_direction)), new_up, params.sort_direction);
 				local = local * mat3(txform);
@@ -211,20 +209,19 @@ void main() {
 
 			} break;
 			case ALIGN_ROTATE_AXIS: {
-				if(bool(params.align_flags & uint(1))){
-				vec3 v = particles.data[particle].velocity;
-				v = normalize(v);
+				if (bool(params.align_flags & uint(1))) {
+					vec3 v = particles.data[particle].velocity;
+					v = normalize(v);
 
-				switch (params.align_axis) {
+					switch (params.align_axis) {
 						case ALIGN_AXIS_X: {
 							vec3 len = vec3(
-								length(txform[0].xyz),
-								length(txform[1].xyz),
-								length(txform[2].xyz)
-							);
+									length(txform[0].xyz),
+									length(txform[1].xyz),
+									length(txform[2].xyz));
 
 							txform[0].xyz = v;
-							txform[1].xyz = normalize(cross(txform[2].xyz/len.z, txform[0].xyz));
+							txform[1].xyz = normalize(cross(txform[2].xyz / len.z, txform[0].xyz));
 							txform[2].xyz = cross(txform[0].xyz, txform[1].xyz);
 
 							txform[0].xyz *= len.x;
@@ -233,26 +230,25 @@ void main() {
 						} break;
 						case ALIGN_AXIS_Y: {
 							vec3 len = vec3(
-								length(txform[0].xyz),
-								length(txform[1].xyz),
-								length(txform[2].xyz)
-							);
+									length(txform[0].xyz),
+									length(txform[1].xyz),
+									length(txform[2].xyz));
 
-							txform[0].xyz = normalize(cross(v, txform[2].xyz/len.z));
+							txform[0].xyz = normalize(cross(v, txform[2].xyz / len.z));
 							txform[1].xyz = v;
 							txform[2].xyz = cross(txform[0].xyz, txform[1].xyz);
 
 							txform[0].xyz *= len.x;
 							txform[1].xyz *= len.y;
 							txform[2].xyz *= len.z;
-						} break;case ALIGN_AXIS_Z: {
+						} break;
+						case ALIGN_AXIS_Z: {
 							vec3 len = vec3(
-								length(txform[0].xyz),
-								length(txform[1].xyz),
-								length(txform[2].xyz)
-							);
+									length(txform[0].xyz),
+									length(txform[1].xyz),
+									length(txform[2].xyz));
 
-							txform[0].xyz = normalize(cross(txform[1].xyz/len.y, v));
+							txform[0].xyz = normalize(cross(txform[1].xyz / len.y, v));
 							txform[2].xyz = v;
 							txform[1].xyz = normalize(cross(txform[2].xyz, txform[0].xyz));
 
@@ -276,6 +272,9 @@ void main() {
 				}
 				float angle = 0.;
 				switch (params.align_custom_src) {
+					case CUSTOM_SRC_NONE: {
+						angle = 0.;
+					} break;
 					case CUSTOM_SRC_X: {
 						angle = particles.data[particle].custom.x;
 					} break;
@@ -294,41 +293,69 @@ void main() {
 				float c = cos(angle);
 				float oc = 1.0 - c;
 				vec3 len = vec3(
-					length(txform[0].xyz),
-					length(txform[1].xyz),
-					length(txform[2].xyz)
-				);
+						length(txform[0].xyz),
+						length(txform[1].xyz),
+						length(txform[2].xyz));
 				mat3 rotated = mat3(
 						oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s,
 						oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s,
-						oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c
-					);
+						oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c);
 				mat3 txform_normalized = mat3(txform);
 				txform_normalized[0] /= len.x;
 				txform_normalized[1] /= len.y;
 				txform_normalized[2] /= len.z;
-				rotated = txform_normalized * rotated * mat3(
-					len.x, 0.0,0.0,
-					0.0,len.y, 0.0,
-					0.0, 0.0,len.z
-				);
+				rotated = txform_normalized * rotated * mat3(len.x, 0.0, 0.0, 0.0, len.y, 0.0, 0.0, 0.0, len.z);
 				vec4 origin = txform[3];
 				txform = mat4(rotated);
 				txform[3] = origin;
 			} break;
 			case ALIGN_Y_TO_VELOCITY: {
 				vec3 v = particles.data[particle].velocity;
-				float s = (length(txform[0]) + length(txform[1]) + length(txform[2])) / 3.0;
-				if (length(v) > 0.0) {
-					txform[1].xyz = normalize(v);
-				} else {
-					txform[1].xyz = normalize(txform[1].xyz);
-				}
+				v = normalize(v);
+				switch (params.align_axis) {
+					case ALIGN_AXIS_X: {
+						vec3 len = vec3(
+								length(txform[0].xyz),
+								length(txform[1].xyz),
+								length(txform[2].xyz));
 
-				txform[0].xyz = normalize(cross(txform[1].xyz, txform[2].xyz));
-				txform[2].xyz = vec3(0.0, 0.0, 1.0) * s;
-				txform[0].xyz *= s;
-				txform[1].xyz *= s;
+						txform[0].xyz = v;
+						txform[1].xyz = normalize(cross(txform[2].xyz / len.z, txform[0].xyz));
+						txform[2].xyz = cross(txform[0].xyz, txform[1].xyz);
+
+						txform[0].xyz *= len.x;
+						txform[1].xyz *= len.y;
+						txform[2].xyz *= len.z;
+					} break;
+					case ALIGN_AXIS_Y: {
+						vec3 len = vec3(
+								length(txform[0].xyz),
+								length(txform[1].xyz),
+								length(txform[2].xyz));
+
+						txform[0].xyz = normalize(cross(v, txform[2].xyz / len.z));
+						txform[1].xyz = v;
+						txform[2].xyz = cross(txform[0].xyz, txform[1].xyz);
+
+						txform[0].xyz *= len.x;
+						txform[1].xyz *= len.y;
+						txform[2].xyz *= len.z;
+					} break;
+					case ALIGN_AXIS_Z: {
+						vec3 len = vec3(
+								length(txform[0].xyz),
+								length(txform[1].xyz),
+								length(txform[2].xyz));
+
+						txform[0].xyz = normalize(cross(txform[1].xyz / len.y, v));
+						txform[2].xyz = v;
+						txform[1].xyz = normalize(cross(txform[2].xyz, txform[0].xyz));
+
+						txform[0].xyz *= len.x;
+						txform[1].xyz *= len.y;
+						txform[2].xyz *= len.z;
+					} break;
+				}
 			} break;
 			case ALIGN_Z_BILLBOARD_Y_TO_VELOCITY: {
 				vec3 v = particles.data[particle].velocity;
@@ -349,14 +376,13 @@ void main() {
 				vec3 v = particles.data[particle].velocity;
 				v = normalize(v);
 
-				if(bool(params.align_flags & uint(1))){
+				if (bool(params.align_flags & uint(1))) {
 					switch (params.align_axis) {
 						case ALIGN_AXIS_X: {
 							vec3 len = vec3(
-								length(txform[0].xyz),
-								length(txform[1].xyz),
-								length(txform[2].xyz)
-							);
+									length(txform[0].xyz),
+									length(txform[1].xyz),
+									length(txform[2].xyz));
 
 							txform[0].xyz = v;
 							txform[1].xyz = normalize(cross(params.sort_direction, v));
@@ -368,10 +394,9 @@ void main() {
 						} break;
 						case ALIGN_AXIS_Y: {
 							vec3 len = vec3(
-								length(txform[0].xyz),
-								length(txform[1].xyz),
-								length(txform[2].xyz)
-							);
+									length(txform[0].xyz),
+									length(txform[1].xyz),
+									length(txform[2].xyz));
 
 							txform[0].xyz = normalize(cross(v, params.sort_direction));
 							txform[1].xyz = v;
@@ -386,10 +411,9 @@ void main() {
 					switch (params.align_axis) {
 						case ALIGN_AXIS_X: {
 							vec3 len = vec3(
-								length(txform[0].xyz),
-								length(txform[1].xyz),
-								length(txform[2].xyz)
-							);
+									length(txform[0].xyz),
+									length(txform[1].xyz),
+									length(txform[2].xyz));
 
 							//txform[0].xyz = v;
 							txform[1].xyz = normalize(cross(params.sort_direction, txform[0].xyz));
@@ -401,10 +425,9 @@ void main() {
 						} break;
 						case ALIGN_AXIS_Y: {
 							vec3 len = vec3(
-								length(txform[0].xyz),
-								length(txform[1].xyz),
-								length(txform[2].xyz)
-							);
+									length(txform[0].xyz),
+									length(txform[1].xyz),
+									length(txform[2].xyz));
 
 							txform[0].xyz = normalize(cross(txform[1].xyz, params.sort_direction));
 							txform[2].xyz = cross(txform[0].xyz, txform[1].xyz);
@@ -415,8 +438,8 @@ void main() {
 						} break;
 					}
 				}
-				
-			}break;
+
+			} break;
 		}
 
 		txform[3].xyz += particles.data[particle].velocity * params.frame_remainder;
