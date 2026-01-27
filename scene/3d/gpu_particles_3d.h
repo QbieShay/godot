@@ -86,8 +86,8 @@ private:
 	double trail_lifetime = 0.3;
 
 	TransformAlign transform_align = TRANSFORM_ALIGN_DISABLED;
-	RS::ParticlesAlignCustomSrc transform_align_custom_src = RS::ParticlesAlignCustomSrc::PARTICLES_ALIGN_CUSTOM_SRC_X;
-	RS::ParticlesAlignRotationAxis transform_align_rotation_axis = RS::ParticlesAlignRotationAxis::PARTICLES_ALIGN_AXIS_Y;
+	RS::ParticlesTransformAlignCustomSrc transform_align_custom_src = RS::ParticlesTransformAlignCustomSrc::PARTICLES_ALIGN_CUSTOM_SRC_X;
+	RS::ParticlesTransformAlignAxis transform_align_rotation_axis = RS::ParticlesTransformAlignAxis::PARTICLES_ALIGN_AXIS_Y;
 	bool transform_align_use_velocity = true;
 
 	Ref<Material> process_material;
@@ -186,11 +186,11 @@ public:
 	void set_transform_align(TransformAlign p_align);
 	TransformAlign get_transform_align() const;
 
-	void set_transform_align_custom_src(RS::ParticlesAlignCustomSrc p_align_custom_src);
-	RS::ParticlesAlignCustomSrc get_transform_align_custom_src() const;
+	void set_transform_align_custom_src(RS::ParticlesTransformAlignCustomSrc p_align_custom_src);
+	RS::ParticlesTransformAlignCustomSrc get_transform_align_custom_src() const;
 
-	void set_transform_align_rotation_axis(RS::ParticlesAlignRotationAxis p_axis);
-	RS::ParticlesAlignRotationAxis get_transform_align_rotation_axis() const;
+	void set_transform_align_axis(RS::ParticlesTransformAlignAxis p_axis);
+	RS::ParticlesTransformAlignAxis get_transform_align_rotation_axis() const;
 
 	void set_transform_align_use_velocity(bool p_align_to_velocity);
 	bool get_transform_align_use_velocity() const;

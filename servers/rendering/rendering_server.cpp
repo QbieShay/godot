@@ -2775,7 +2775,7 @@ void RenderingServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("particles_set_transform_align", "particles", "align"), &RenderingServer::particles_set_transform_align);
 	ClassDB::bind_method(D_METHOD("particles_set_transform_align_custom_src", "particles", "custom_src"), &RenderingServer::particles_set_transform_align_custom_src);
 	ClassDB::bind_method(D_METHOD("particles_set_transform_align_flags", "particles", "flags"), &RenderingServer::particles_set_transform_align_flags);
-	ClassDB::bind_method(D_METHOD("particles_set_transform_align_rotation_axis", "particles", "p_rotation_axis"), &RenderingServer::particles_set_transform_align_rotation_axis);
+	ClassDB::bind_method(D_METHOD("particles_set_transform_align_axis", "particles", "p_rotation_axis"), &RenderingServer::particles_set_transform_align_axis);
 	ClassDB::bind_method(D_METHOD("particles_set_trails", "particles", "enable", "length_sec"), &RenderingServer::particles_set_trails);
 	ClassDB::bind_method(D_METHOD("particles_set_trail_bind_poses", "particles", "bind_poses"), &RenderingServer::_particles_set_trail_bind_poses);
 
