@@ -166,6 +166,8 @@ private:
 	bool _needs_rebuilding = false;
 	real_t _time = 0.;
 	PackedRealArray _times;
+	// Reasonable number that's also a multiple of 3, otherwise the renderer screams at us
+	int _last_vertex_count = 600;
 
 	static inline Ref<Shader> billboard_additive_shader;
 	static inline Ref<Shader> billboard_shader;

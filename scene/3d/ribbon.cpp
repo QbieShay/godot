@@ -33,6 +33,7 @@
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "scene/3d/camera_3d.h"
+#include "servers/rendering/rendering_server.h"
 
 // Points calculation, line construction and shaders are taken
 // and adapted from CozyCubeGames.
@@ -64,12 +65,7 @@ void Ribbon::init_shaders() {
 	billboard_additive_shader.instantiate();
 	billboard_additive_shader->set_code(R"(
 shader_type spatial;
-render_mode
-	blend_add,
-	depth_draw_never,
-	unshaded,
-	skip_vertex_transform,
-	cull_disabled;
+render_mode blend_add, depth_draw_never, unshaded, skip_vertex_transform, cull_disabled;
 
 void vertex() {
 	vec3 p = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -87,12 +83,7 @@ void fragment() {
 	billboard_shader.instantiate();
 	billboard_shader->set_code(R"(
 shader_type spatial;
-render_mode
-	blend_mix,
-	depth_draw_never,
-	unshaded,
-	skip_vertex_transform,
-	cull_disabled;
+render_mode blend_mix, depth_draw_never, unshaded, skip_vertex_transform, cull_disabled;
 
 void vertex() {
 	vec3 p = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -110,11 +101,7 @@ void fragment() {
 	local_additive_shader.instantiate();
 	local_additive_shader->set_code(R"(
 shader_type spatial;
-render_mode
-	blend_add,
-	depth_draw_never,
-	unshaded,
-	cull_disabled;
+render_mode blend_add, depth_draw_never, unshaded, cull_disabled;
 
 void fragment() {
 	ALBEDO = COLOR.rgb;
@@ -124,11 +111,7 @@ void fragment() {
 	local_shader.instantiate();
 	local_shader->set_code(R"(
 shader_type spatial;
-render_mode
-	blend_mix,
-	depth_draw_never,
-	unshaded,
-	cull_disabled;
+render_mode blend_mix, depth_draw_never, unshaded, cull_disabled;
 
 void fragment() {
 	ALBEDO = COLOR.rgb;
@@ -168,6 +151,9 @@ void Ribbon::_notification(int p_what) {
 				_do_rebuild();
 			}
 		} break;
+		case NOTIFICATION_READY: {
+			clear();
+		}
 	}
 }
 
@@ -318,6 +304,8 @@ void Ribbon::clear() {
 	if (ribbon_mode == RIBBON_MODE_TRAIL) {
 		tiling_offset = 0.;
 	}
+	_last_vertex_count = 512;
+	set_mesh(nullptr);
 	rebuild();
 }
 
@@ -406,26 +394,39 @@ void Ribbon::_do_rebuild() {
 	if (!is_inside_tree() || !is_ready() || !_needs_rebuilding) {
 		return;
 	}
-	if (Object::cast_to<ArrayMesh>(mesh.ptr()) == nullptr) {
-		mesh = memnew(ArrayMesh);
-	}
-	Ref<ArrayMesh> am = mesh;
-	am->clear_surfaces();
 
 	int points_count = points.size();
-	int start_idx = 0;
 
-	while (points_count >= 2 && points[start_idx + 1].is_equal_approx(points[start_idx])) {
-		start_idx += 1;
-		points_count -= 1;
-	}
-	while (points_count >= 2 && points[start_idx + points_count - 1].is_equal_approx(points[start_idx + points_count - 2])) {
-		points_count -= 1;
+	if (Object::cast_to<ArrayMesh>(mesh.ptr()) == nullptr) {
+		set_mesh(memnew(ArrayMesh));
+		Ref<ArrayMesh> am = mesh;
+		Array arrays;
+
+		PackedVector3Array mesh_vertices;
+		PackedVector3Array mesh_normals;
+		PackedColorArray mesh_colors;
+		PackedVector2Array mesh_uvs;
+		PackedInt32Array mesh_indices;
+
+		mesh_vertices.resize(_last_vertex_count);
+		mesh_normals.resize(_last_vertex_count);
+		mesh_colors.resize(_last_vertex_count);
+		mesh_uvs.resize(_last_vertex_count);
+		mesh_indices.resize((_last_vertex_count) * 3);
+
+		arrays.resize(RSE::ARRAY_MAX);
+		arrays[RSE::ARRAY_VERTEX] = mesh_vertices;
+		arrays[RSE::ARRAY_NORMAL] = mesh_normals;
+		arrays[RSE::ARRAY_TEX_UV] = mesh_uvs;
+		arrays[RSE::ARRAY_COLOR] = mesh_colors;
+		arrays[RSE::ARRAY_INDEX] = mesh_indices;
+		am->add_surface_from_arrays(ArrayMesh::PRIMITIVE_TRIANGLES, arrays);
+
+		_ensure_material();
 	}
 
-	if (points_count < 2) {
-		return;
-	}
+	Ref<ArrayMesh> am = mesh;
+
 	_needs_rebuilding = false;
 
 	PackedVector3Array mesh_vertices;
@@ -468,16 +469,19 @@ void Ribbon::_do_rebuild() {
 	real_t length = _calc_current_length();
 
 	real_t dist = 0.0;
+	Vector3 min_bounds = Vector3();
+	Vector3 max_bounds = Vector3();
+	Vector3 width_bounds = Vector3(width, width, width);
 
 	for (int i = 0; i < points_count; i++) {
 		int j0 = i * 3;
 		int j1 = j0 + 1;
 		int j2 = j0 + 2;
 
-		Vector3 p = points[i + start_idx];
+		Vector3 p = points[i];
 
 		if (i > 0) {
-			dist += points[i - 1 + start_idx].distance_to(p);
+			dist += points[i - 1].distance_to(p);
 		}
 
 		real_t ratio = length > 0.0 ? dist / length : 0.0;
@@ -507,12 +511,20 @@ void Ribbon::_do_rebuild() {
 		Vector3 tangent;
 
 		if (i == 0) {
-			tangent = (points[i + 1 + start_idx] - p).normalized();
+			tangent = (points[i + 1] - p);
 		} else if (i == points_count - 1) {
-			tangent = (p - points[i - 1 + start_idx]).normalized();
+			tangent = (p - points[i - 1]);
 		} else {
-			tangent = (points[i + 1 + start_idx] - points[i - 1 + start_idx]).normalized();
+			tangent = (points[i + 1] - points[i - 1]);
 		}
+		if (tangent.length() > 0) {
+			tangent = tangent.normalized();
+		} else {
+			tangent = Vector3(0.0, 0.0, 1.0);
+		}
+
+		min_bounds = MIN(min_bounds, p - width_bounds);
+		max_bounds = MAX(max_bounds, p + width_bounds);
 		p = inv_global_tf.xform(p);
 		tangent = inv_global_tf.basis.xform(tangent);
 
@@ -556,6 +568,18 @@ void Ribbon::_do_rebuild() {
 		_colors[j2] = c;
 	}
 
+	/*
+	for (int i = 0; i < _last_vertex_count - points_count * 3; i++ ){
+		_vertices[points_count * 3 + i] = _vertices[points_count * 3 -1];
+		_uvs[points_count * 3 + i] = _uvs[points_count * 3 -1];
+		_normals[points_count * 3 + i] = Vector3(0.0, 0.0, 0.0);
+		_colors[points_count * 3 + i] = Color(1.0,1.0,1.0,0.0);
+	}
+	int index_count = mesh_indices.size();
+	for (int i = index_count; i < _last_vertex_count; i++) {
+		_indices[i] = _indices[index_count - 1];
+	}*/
+
 	Array arrays;
 	arrays.resize(RSE::ARRAY_MAX);
 	arrays[RSE::ARRAY_VERTEX] = mesh_vertices;
@@ -564,9 +588,39 @@ void Ribbon::_do_rebuild() {
 	arrays[RSE::ARRAY_COLOR] = mesh_colors;
 	arrays[RSE::ARRAY_INDEX] = mesh_indices;
 
-	am->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+	if (points_count * 3 > _last_vertex_count) {
+		while (points_count * 3 > _last_vertex_count) {
+			_last_vertex_count *= 2;
+		}
+		int index_count = mesh_indices.size();
+		mesh_vertices.resize(_last_vertex_count);
+		mesh_normals.resize(_last_vertex_count);
+		mesh_uvs.resize(_last_vertex_count);
+		mesh_colors.resize(_last_vertex_count);
+		mesh_indices.resize(_last_vertex_count * 3);
+		for (int i = points_count * 3; i < _last_vertex_count; i++) {
+			_vertices[i] = Vector3();
+			_normals[i] = Vector3();
+		}
+		for (int i = index_count; i < _last_vertex_count; i++) {
+			_indices[i] = _indices[index_count];
+		}
+		am->clear_surfaces();
+		am->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+		_ensure_material();
 
-	_ensure_material();
+	} else {
+		RenderingServerTypes::SurfaceData sd;
+		Error err = RS::get_singleton()->mesh_create_surface_data_from_arrays(&sd, RSE::PRIMITIVE_TRIANGLES, arrays, Array(), Dictionary(), 0);
+		if (err != OK) {
+			return;
+		}
+		RID rid = am->get_rid();
+		RS::get_singleton()->mesh_surface_update_vertex_region(rid, 0, 0, sd.vertex_data);
+		RS::get_singleton()->mesh_surface_update_attribute_region(rid, 0, 0, sd.attribute_data);
+		RS::get_singleton()->mesh_surface_update_index_region(rid, 0, 0, sd.index_data);
+	}
+	am->set_custom_aabb(AABB(Vector3(), (max_bounds - min_bounds)));
 }
 
 void Ribbon::_process_beam() {
@@ -715,7 +769,7 @@ void Ribbon::_process_trail(real_t p_delta) {
 
 void Ribbon::_validate_property(PropertyInfo &p_property) const {
 	if (p_property.name == "mesh") {
-		p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		p_property.usage = PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_RESOURCE_NOT_PERSISTENT;
 	}
 	if (p_property.name == "material" && material_mode != MATERIAL_MODE_CUSTOM) {
 		p_property.usage = PROPERTY_USAGE_NONE;
@@ -888,7 +942,6 @@ Ribbon::Ribbon() {
 	normals = PackedVector3Array();
 	velocities = PackedRealArray();
 	_times = PackedRealArray();
-	mesh = memnew(ArrayMesh);
 }
 
 Ribbon::~Ribbon() {
