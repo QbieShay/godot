@@ -163,6 +163,18 @@ private:
 	PackedRealArray velocities;
 	Ref<ShaderMaterial> material;
 
+	// Mesh optimization code
+	uint32_t mesh_surface_offsets[RSE::ARRAY_MAX];
+	PackedByteArray vertex_buffer;
+	PackedByteArray attribute_buffer;
+	Vector<uint8_t> index_buffer;
+
+	uint32_t vertex_stride = 0;
+	uint32_t normal_tangent_stride = 0;
+	uint32_t attrib_stride = 0;
+	uint32_t skin_stride = 0;
+	uint32_t mesh_surface_format = 0;
+
 	bool _needs_rebuilding = false;
 	real_t _time = 0.;
 	PackedRealArray _times;
@@ -199,6 +211,10 @@ private:
 	void _ensure_material();
 	void _process_beam();
 	void _process_trail(real_t p_delta);
+	void _encode_vertex(Vector3 vertex, int index);
+	void _encode_normal(Vector3 normal, int index);
+	void _encode_uv(Vector2 uv, int index);
+	void _encode_color(Color p_color, int index);
 
 	Ribbon();
 	~Ribbon();

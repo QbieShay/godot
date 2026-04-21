@@ -68,11 +68,16 @@ shader_type spatial;
 render_mode blend_add, depth_draw_never, unshaded, skip_vertex_transform, cull_disabled;
 
 void vertex() {
+	if (length(NORMAL) > 0.){
 	vec3 p = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vec3 t = (MODELVIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
 	VERTEX = p + UV.y * normalize(cross(p, t));
 	NORMAL = (VIEW_MATRIX * vec4(0, 1, 0, 0)).xyz;
 	UV.y = (sign(UV.y) + 1.0) / 2.0;
+	} else {
+		VERTEX = vec3(0.);
+		NORMAL = vec3(0.);
+	}
 }
 
 void fragment() {
@@ -86,11 +91,16 @@ shader_type spatial;
 render_mode blend_mix, depth_draw_never, unshaded, skip_vertex_transform, cull_disabled;
 
 void vertex() {
+	if (length(NORMAL) > 0.){
 	vec3 p = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vec3 t = (MODELVIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
 	VERTEX = p + UV.y * normalize(cross(p, t));
 	NORMAL = (VIEW_MATRIX * vec4(0, 1, 0, 0)).xyz;
 	UV.y = (sign(UV.y) + 1.0) / 2.0;
+	} else {
+		VERTEX = vec3(0.);
+		NORMAL = vec3(0.);
+	}
 }
 
 void fragment() {
@@ -397,7 +407,11 @@ void Ribbon::_do_rebuild() {
 
 	int points_count = points.size();
 
-	if (Object::cast_to<ArrayMesh>(mesh.ptr()) == nullptr) {
+	if (points.size() < 2) {
+		return;
+	}
+
+	if (Object::cast_to<ArrayMesh>(mesh.ptr()) == nullptr || mesh->get_surface_count() == 0) {
 		set_mesh(memnew(ArrayMesh));
 		Ref<ArrayMesh> am = mesh;
 		Array arrays;
@@ -420,7 +434,23 @@ void Ribbon::_do_rebuild() {
 		arrays[RSE::ARRAY_TEX_UV] = mesh_uvs;
 		arrays[RSE::ARRAY_COLOR] = mesh_colors;
 		arrays[RSE::ARRAY_INDEX] = mesh_indices;
-		am->add_surface_from_arrays(ArrayMesh::PRIMITIVE_TRIANGLES, arrays);
+
+		RID mesh_rid = am->get_rid();
+		RenderingServerTypes::SurfaceData sd;
+		Error err = RS::get_singleton()->mesh_create_surface_data_from_arrays(&sd, RSE::PRIMITIVE_TRIANGLES, arrays, Array(), Dictionary());
+		if (err != OK) {
+			print_error("Trail3D failed mesh initialization. Please open a bug report");
+		}
+
+		mesh_surface_format = sd.format;
+		vertex_buffer = sd.vertex_data.duplicate();
+		attribute_buffer = sd.attribute_data.duplicate();
+		index_buffer = sd.index_data.duplicate();
+
+		RS::get_singleton()->mesh_surface_make_offsets_from_format(sd.format, sd.vertex_count, sd.index_count, mesh_surface_offsets, vertex_stride, normal_tangent_stride, attrib_stride, skin_stride);
+		RS::get_singleton()->mesh_clear(mesh_rid);
+		am->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+		//RS::get_singleton()->mesh_add_surface(mesh_rid, sd);
 
 		_ensure_material();
 	}
@@ -435,11 +465,14 @@ void Ribbon::_do_rebuild() {
 	PackedVector2Array mesh_uvs;
 	PackedInt32Array mesh_indices;
 
-	mesh_vertices.resize(points_count * 3);
-	mesh_normals.resize(points_count * 3);
-	mesh_colors.resize(points_count * 3);
-	mesh_uvs.resize(points_count * 3);
+	int array_size = points_count * 3;
+	mesh_vertices.resize(array_size);
+	mesh_normals.resize(array_size);
+	mesh_colors.resize(array_size);
+	mesh_uvs.resize(array_size);
 	mesh_indices.resize((points_count - 1) * 12);
+	uint8_t *vertex_write_buffer = vertex_buffer.ptrw();
+	uint8_t *attribute_write_buffer = attribute_buffer.ptrw();
 
 	Vector3 *_vertices = mesh_vertices.ptrw();
 	Vector3 *_normals = mesh_normals.ptrw();
@@ -532,14 +565,23 @@ void Ribbon::_do_rebuild() {
 			_vertices[j0] = p;
 			_vertices[j1] = p;
 			_vertices[j2] = p;
+			_encode_vertex(p, j0);
+			_encode_vertex(p, j1);
+			_encode_vertex(p, j2);
 
 			_normals[j0] = tangent;
 			_normals[j1] = tangent;
 			_normals[j2] = tangent;
+			_encode_normal(tangent, j0);
+			_encode_normal(tangent, j1);
+			_encode_normal(tangent, j2);
 
 			_uvs[j0] = Vector2(length_uv, -half_width);
 			_uvs[j1] = Vector2(length_uv, 0);
 			_uvs[j2] = Vector2(length_uv, half_width);
+			_encode_uv(_uvs[j0], j0);
+			_encode_uv(_uvs[j1], j1);
+			_encode_uv(_uvs[j2], j2);
 
 		} else {
 			Vector3 normal = normals[i];
@@ -549,14 +591,23 @@ void Ribbon::_do_rebuild() {
 			_vertices[j0] = p + half_width * curve_binormal;
 			_vertices[j1] = p;
 			_vertices[j2] = p - half_width * curve_binormal;
+			_encode_vertex(_vertices[j0], j0);
+			_encode_vertex(_vertices[j1], j1);
+			_encode_vertex(_vertices[j2], j2);
 
 			_normals[j0] = normal;
 			_normals[j1] = normal;
 			_normals[j2] = normal;
+			_encode_normal(normal, j0);
+			_encode_normal(normal, j1);
+			_encode_normal(normal, j2);
 
 			_uvs[j0] = Vector2(length_uv, 0);
 			_uvs[j1] = Vector2(length_uv, 0.5);
 			_uvs[j2] = Vector2(length_uv, 1);
+			_encode_uv(_uvs[j0], j0);
+			_encode_uv(_uvs[j1], j1);
+			_encode_uv(_uvs[j2], j2);
 		}
 		Color c = color.srgb_to_linear();
 		if (color_gradient.is_valid()) {
@@ -566,6 +617,9 @@ void Ribbon::_do_rebuild() {
 		_colors[j0] = c;
 		_colors[j1] = c;
 		_colors[j2] = c;
+		_encode_color(c, j0);
+		_encode_color(c, j1);
+		_encode_color(c, j2);
 	}
 
 	/*
@@ -592,33 +646,53 @@ void Ribbon::_do_rebuild() {
 		while (points_count * 3 > _last_vertex_count) {
 			_last_vertex_count *= 2;
 		}
+		if (_last_vertex_count >= 65536) {
+			WARN_PRINT("Vertex count for trail tried to exceed max vertex size.");
+		}
+		_last_vertex_count = MIN(_last_vertex_count, 65536);
 		int index_count = mesh_indices.size();
 		mesh_vertices.resize(_last_vertex_count);
 		mesh_normals.resize(_last_vertex_count);
 		mesh_uvs.resize(_last_vertex_count);
 		mesh_colors.resize(_last_vertex_count);
 		mesh_indices.resize(_last_vertex_count * 3);
+		_vertices = mesh_vertices.ptrw();
+		_normals = mesh_normals.ptrw();
+		_indices = mesh_indices.ptrw();
 		for (int i = points_count * 3; i < _last_vertex_count; i++) {
 			_vertices[i] = Vector3();
 			_normals[i] = Vector3();
 		}
-		for (int i = index_count; i < _last_vertex_count; i++) {
-			_indices[i] = _indices[index_count];
+		for (int i = index_count; i < _last_vertex_count * 3; i++) {
+			_indices[i] = 0;
 		}
-		am->clear_surfaces();
-		am->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+
+		RID mesh_rid = am->get_rid();
+		RenderingServerTypes::SurfaceData sd;
+		Error err = RS::get_singleton()->mesh_create_surface_data_from_arrays(&sd, RSE::PRIMITIVE_TRIANGLES, arrays, Array(), Dictionary());
+		if (err != OK) {
+			print_error("Trail3D failed mesh initialization. Please open a bug report");
+		}
+		mesh_surface_format = sd.format;
+		vertex_buffer = sd.vertex_data.duplicate();
+		attribute_buffer = sd.attribute_data.duplicate();
+		index_buffer = sd.index_data.duplicate();
+
+		RS::get_singleton()->mesh_surface_make_offsets_from_format(sd.format, sd.vertex_count, sd.index_count, mesh_surface_offsets, vertex_stride, normal_tangent_stride, attrib_stride, skin_stride);
+		RS::get_singleton()->mesh_clear(mesh_rid);
+		RS::get_singleton()->mesh_add_surface(mesh_rid, sd);
 		_ensure_material();
 
 	} else {
-		RenderingServerTypes::SurfaceData sd;
-		Error err = RS::get_singleton()->mesh_create_surface_data_from_arrays(&sd, RSE::PRIMITIVE_TRIANGLES, arrays, Array(), Dictionary(), 0);
-		if (err != OK) {
-			return;
-		}
 		RID rid = am->get_rid();
-		RS::get_singleton()->mesh_surface_update_vertex_region(rid, 0, 0, sd.vertex_data);
-		RS::get_singleton()->mesh_surface_update_attribute_region(rid, 0, 0, sd.attribute_data);
-		RS::get_singleton()->mesh_surface_update_index_region(rid, 0, 0, sd.index_data);
+		uint8_t *writable_index = index_buffer.ptrw();
+		for (int i = 0; i < mesh_indices.size(); i++) {
+			uint16_t idx = (uint16_t)_indices[i];
+			memcpy(&writable_index[i * 2], &idx, sizeof(uint16_t));
+		}
+		RS::get_singleton()->mesh_surface_update_vertex_region(rid, 0, 0, vertex_buffer);
+		RS::get_singleton()->mesh_surface_update_attribute_region(rid, 0, 0, attribute_buffer);
+		RS::get_singleton()->mesh_surface_update_index_region(rid, 0, 0, index_buffer);
 	}
 	am->set_custom_aabb(AABB(Vector3(), (max_bounds - min_bounds)));
 }
@@ -942,7 +1016,40 @@ Ribbon::Ribbon() {
 	normals = PackedVector3Array();
 	velocities = PackedRealArray();
 	_times = PackedRealArray();
+	vertex_buffer = PackedByteArray();
+	attribute_buffer = PackedByteArray();
+	index_buffer = Vector<uint8_t>();
+	set_mesh(nullptr);
 }
 
 Ribbon::~Ribbon() {
+}
+
+void Ribbon::_encode_vertex(Vector3 vertex, int index) {
+	float v_vertex[3] = { (float)vertex.x, (float)vertex.y, (float)vertex.z };
+	memcpy(&(vertex_buffer.ptrw())[index * vertex_stride + mesh_surface_offsets[RSE::ARRAY_VERTEX]], &v_vertex, sizeof(float) * 3);
+}
+
+void Ribbon::_encode_normal(Vector3 normal, int index) {
+	uint32_t v_normal = 0;
+	Vector2 res = normal.octahedron_encode();
+	v_normal |= (uint16_t)CLAMP(res.x * 65535, 0, 65535);
+	v_normal |= (uint16_t)CLAMP(res.y * 65535, 0, 65535) << 16;
+
+	memcpy(&(vertex_buffer.ptrw())[index * normal_tangent_stride + mesh_surface_offsets[RSE::ARRAY_NORMAL]], &v_normal, 4);
+}
+
+void Ribbon::_encode_uv(Vector2 p_uv, int index) {
+	float v_uv[2] = { (float)p_uv.x, (float)p_uv.y };
+	memcpy(&(attribute_buffer.ptrw())[index * attrib_stride + mesh_surface_offsets[RSE::ARRAY_TEX_UV]], v_uv, 8);
+}
+
+void Ribbon::_encode_color(Color p_color, int index) {
+	uint8_t v_color[4] = {
+		uint8_t(CLAMP(p_color.r * 255.0, 0.0, 255.0)),
+		uint8_t(CLAMP(p_color.g * 255.0, 0.0, 255.0)),
+		uint8_t(CLAMP(p_color.b * 255.0, 0.0, 255.0)),
+		uint8_t(CLAMP(p_color.a * 255.0, 0.0, 255.0))
+	};
+	memcpy(&(attribute_buffer.ptrw())[index * attrib_stride + mesh_surface_offsets[RSE::ARRAY_COLOR]], v_color, 4);
 }
