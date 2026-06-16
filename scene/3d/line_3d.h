@@ -31,9 +31,6 @@
 #pragma once
 
 #include "scene/3d/visual_instance_3d.h"
-#include "scene/resources/curve.h"
-#include "scene/resources/gradient.h"
-#include "scene/resources/mesh.h"
 
 class Line3D : public GeometryInstance3D {
 	GDCLASS(Line3D, GeometryInstance3D);
@@ -42,9 +39,6 @@ protected:
 	static void _bind_methods();
 
 public:
-	static void init_shaders();
-	static void finish_shaders();
-
 	enum MeshAlignment {
 		MESH_ALIGNMENT_LOCAL,
 		MESH_ALIGNMENT_BILLBOARD,
@@ -63,96 +57,6 @@ public:
 		MATERIAL_MODE_CUSTOM,
 		MATERIAL_MODE_MAX
 	};
-
-	void set_width(float p_width);
-	float get_width() const;
-
-	void set_width_curve(Ref<Curve> p_curve);
-	Ref<Curve> get_width_curve() const;
-
-	void set_color(const Color &p_color);
-	Color get_color() const;
-
-	void set_color_gradient(Ref<Gradient> p_color_gradient);
-	Ref<Gradient> get_color_gradient() const;
-
-	void set_material_mode(MaterialMode p_material_mode);
-	MaterialMode get_material_mode() const;
-
-	void set_material(Ref<ShaderMaterial> p_material);
-	Ref<ShaderMaterial> get_material() const;
-
-	void set_mesh_alignment(MeshAlignment p_alignment);
-	MeshAlignment get_mesh_alignment() const;
-
-	void set_tiling_mode(TilingMode p_tiling_mode);
-	TilingMode get_tiling_mode() const;
-
-	void set_tiling_multiplier(float p_tiling_multiplier);
-	float get_tiling_multiplier() const;
-
-	void set_tiling_offset(float p_tiling_offset);
-	float get_tiling_offset() const;
-
-	void rebuild(bool p_force = false);
-	virtual void clear();
-
-	Line3D();
-
-private:
-	float width = 1.0;
-	Ref<Curve> width_curve;
-	Color color = Color(1.0, 1.0, 1.0, 1.0);
-	Ref<Gradient> color_gradient;
-	MaterialMode material_mode = MATERIAL_MODE_MIX;
-	MeshAlignment alignment = MESH_ALIGNMENT_BILLBOARD;
-	TilingMode tiling_mode = TILING_MODE_LENGTH;
-	float tiling_multiplier = 1.0;
-	float tiling_offset = 0.0;
-	PackedVector3Array points;
-	PackedVector3Array normals;
-	PackedVector3Array tangents;
-	Ref<ShaderMaterial> material;
-	real_t min_section_length = 0.2;
-
-	// Mesh optimization code
-	uint32_t mesh_surface_offsets[RSE::ARRAY_MAX];
-	PackedByteArray vertex_buffer;
-	PackedByteArray attribute_buffer;
-	Vector<uint8_t> index_buffer;
-
-	uint32_t vertex_stride = 0;
-	uint32_t normal_tangent_stride = 0;
-	uint32_t attrib_stride = 0;
-	uint32_t skin_stride = 0;
-	uint32_t mesh_surface_format = 0;
-
-	bool _needs_rebuilding = false;
-	real_t _time = 0.0;
-	PackedRealArray _times;
-	// Reasonable number that's also a multiple of 3, otherwise the renderer screams at us
-	int _last_vertex_count = 600;
-	Ref<ArrayMesh> _mesh;
-
-	static inline Ref<Shader> billboard_additive_shader;
-	static inline Ref<Shader> billboard_shader;
-	static inline Ref<Shader> local_additive_shader;
-	static inline Ref<Shader> local_shader;
-
-	static inline Ref<ShaderMaterial> billboard_additive_material;
-	static inline Ref<ShaderMaterial> billboard_material;
-	static inline Ref<ShaderMaterial> local_additive_material;
-	static inline Ref<ShaderMaterial> local_material;
-
-	void _do_rebuild();
-	real_t _calc_current_length() const;
-	void _ensure_material();
-	void _init_clear_mesh();
-	void _process_trail(real_t p_delta);
-	void _encode_vertex(const Vector3 &p_vertex, int p_index);
-	void _encode_normal(const Vector3 &p_normal, int p_index);
-	void _encode_uv(const Vector2 &p_uv, int p_index);
-	void _encode_color(const Color &p_color, int p_index);
 };
 
 VARIANT_ENUM_CAST(Line3D::TilingMode)
