@@ -166,6 +166,8 @@ private:
 	bool pin_uv = false;
 	real_t _last_section_speed = 0.0;
 	real_t _last_pinned_u = 0.0;
+	Transform3D _previous_transform;
+	bool _transform_changed;
 
 	//Ribbon
 	void _do_rebuild();

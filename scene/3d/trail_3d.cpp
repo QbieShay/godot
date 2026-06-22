@@ -167,6 +167,7 @@ void Trail3D::_notification(int p_what) {
 			if (limit_mode == LIMIT_MODE_MAX_LENGTH) {
 				_process_trail();
 			}
+			_transform_changed = true;
 		}
 	}
 }
@@ -641,43 +642,52 @@ void Trail3D::_process_trail() {
 	Vector3 up = tf.basis.get_column(1);
 	real_t delta = get_process_delta_time();
 	_time += delta;
+	real_t head_velocity = (get_global_position() - _previous_transform.get_origin()).length() / MAX(delta, CMP_EPSILON);
 
 	if (points.size() < 2) {
 		while (points.size() < 2) {
+			print_line("less than 2 points");
 			points.insert(0, pos);
 			normals.insert(0, up);
 			tangents.insert(0, Vector3(0.0, 0.0, 1.0));
 			if (limit_mode == LIMIT_MODE_LIFETIME) {
 				_times.insert(0, _time);
-				_velocities.insert(0, 0.);
+				_velocities.insert(0, head_velocity);
 			}
 		}
-	} else if (emitting) {
-		points.write[0] = pos;
-		normals.write[0] = up;
-		if (pos.distance_squared_to(points[1]) > CMP_EPSILON) {
-			Vector3 t = (pos - points[1]).normalized();
-			tangents.write[0] = t;
-			if (points.size() == 2) {
-				tangents.write[1] = t;
+	} else {
+		if (emitting) {
+			points.write[0] = pos;
+			normals.write[0] = up;
+			if (pos.distance_squared_to(points[1]) > CMP_EPSILON) {
+				real_t len = (pos - points[1]).length();
+				Vector3 t = (pos - points[1]) / len;
+				tangents.write[0] = t;
+				if (points.size() == 2) {
+					tangents.write[1] = t;
+					if (_previous_transform.get_origin().distance_squared_to(points[1]) <= CMP_EPSILON) {
+						_times.write[1] = _time - delta;
+						_velocities.write[1] = head_velocity;
+					}
+				}
+			} else {
+				tangents.write[1] = tangents[0];
+				normals.write[1] = normals[0];
+				points.write[1] = points[0];
+				if (limit_mode == LIMIT_MODE_LIFETIME) {
+					_times.write[1] = _time;
+				}
 			}
-		} else {
-			tangents.write[1] = tangents[0];
-			normals.write[1] = normals[0];
-			points.write[1] = points[0];
-		}
-		if (limit_mode == LIMIT_MODE_LIFETIME) {
-			_times.write[0] = _time;
+			if (limit_mode == LIMIT_MODE_LIFETIME) {
+				_times.write[0] = _time;
+				_velocities.write[0] = head_velocity;
+			}
 		}
 	}
 
 	Vector3 leading = points.get(1);
 	Vector3 from_leading = pos - leading;
 	real_t dist_from_leading = from_leading.length();
-
-	if (dist_from_leading < CMP_EPSILON && limit_mode == LIMIT_MODE_LIFETIME) {
-		_times.write[1] = _time;
-	}
 
 	if (pin_uv) {
 		tiling_offset = -_last_pinned_u - min_section_length;
@@ -708,6 +718,7 @@ void Trail3D::_process_trail() {
 				if (points.size() > 3) {
 					tangents.write[2] = (points[1] - points[3]).normalized();
 				}
+				print_line(points);
 			}
 			break;
 		default:
@@ -744,7 +755,7 @@ void Trail3D::_process_trail() {
 		}
 
 	} else if (limit_mode == LIMIT_MODE_LIFETIME) {
-		// ATTEMPTS: 5
+		// ATTEMPTS: 11
 		// Add +1 to this counter for every failed attempt to improve this code
 		int last_index = _times.size() - 1;
 		real_t second_last_time = _times.get(last_index - 1);
@@ -760,7 +771,7 @@ void Trail3D::_process_trail() {
 		}
 
 		real_t last_time = _times[last_index];
-		if (last_time <= _time - lifetime) {
+		if (last_time <= _time - lifetime && points.size() > 2) {
 			Vector3 dir = points[last_index - 1] - points[last_index];
 			real_t distance = dir.length();
 			real_t speed_distance = _velocities[last_index] * delta;
@@ -768,22 +779,27 @@ void Trail3D::_process_trail() {
 			if (distance > 0.) {
 				points.write[last_index] += dir / distance * MIN(distance, speed_distance);
 			}
-		}
-		// At various points in the code we can generate stacking points.
-		// The mesh building does not especially handle stacked points, so it should be done
-		// On our end.
-		int i = 1;
-		while (i < points.size() - 1) {
-			while (i < points.size() - 1 && points[i].distance_squared_to(points[i + 1]) < CMP_EPSILON) {
-				points.remove_at(i + 1);
-				normals.remove_at(i + 1);
-				tangents.remove_at(i + 1);
-				_times.remove_at(i + 1);
-				_velocities.remove_at(i + 1);
+			if (speed_distance > distance) {
+				points.remove_at(last_index);
+				normals.remove_at(last_index);
+				tangents.remove_at(last_index);
+				_times.remove_at(last_index);
+				_velocities.remove_at(last_index);
 			}
-			i++;
+		}
+		{
+			// Handle this special case, since point zero isn't a "real" pinned point
+			Vector3 dir = points[0] - points[1];
+			real_t distance = dir.length();
+			if (points.size() == 2 && distance > 0.0 && _times[0] - _times[1] > lifetime) {
+				real_t speed_distance = MAX(min_section_length / lifetime, _velocities[1]) * delta;
+				points.write[1] += dir / distance * MIN(distance, speed_distance);
+				print_line("Moving the last 2 points");
+			}
 		}
 	}
+	_previous_transform = get_global_transform();
+	_transform_changed = false;
 	rebuild();
 }
 
