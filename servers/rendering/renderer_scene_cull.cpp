@@ -228,6 +228,8 @@ void RendererSceneCull::_instance_pair(Instance *p_A, Instance *p_B) {
 		geom->lights.insert(B);
 		light->geometries.insert(A);
 
+		RSG::light_storage->light_set_extra_cull_margin(B->base, A->transformed_aabb.get_size().length());
+
 		if (geom->can_cast_shadows) {
 			light->make_shadow_dirty();
 		}
@@ -1734,6 +1736,7 @@ void RendererSceneCull::_update_instance(Instance *p_instance) const {
 
 	AABB new_aabb;
 	new_aabb = instance_xform->xform(p_instance->aabb);
+
 	p_instance->transformed_aabb = new_aabb;
 
 	if ((1 << p_instance->base_type) & RSE::INSTANCE_GEOMETRY_MASK) {
@@ -1825,6 +1828,7 @@ void RendererSceneCull::_update_instance(Instance *p_instance) const {
 				idata.instance_data_rid = light_data->instance.get_id();
 				light_data->uses_projector = RSG::light_storage->light_has_projector(p_instance->base);
 				light_data->uses_softshadow = RSG::light_storage->light_get_type(p_instance->base) == RSE::LIGHT_AREA || RSG::light_storage->light_get_param(p_instance->base, RSE::LIGHT_PARAM_SIZE) > CMP_EPSILON;
+				RSG::light_storage->light_set_extra_cull_margin(p_instance->base, 0., true);
 			} break;
 			case RSE::INSTANCE_REFLECTION_PROBE: {
 				idata.instance_data_rid = static_cast<InstanceReflectionProbeData *>(p_instance->base_data)->instance.get_id();
@@ -1901,6 +1905,8 @@ void RendererSceneCull::_update_instance(Instance *p_instance) const {
 	pair.pair_pass = pair_pass;
 	pair.pair_mask = 0;
 
+	bool is_light_geometry_pair = false;
+
 	if ((1 << p_instance->base_type) & RSE::INSTANCE_GEOMETRY_MASK) {
 		pair.pair_mask |= 1 << RSE::INSTANCE_LIGHT;
 		pair.pair_mask |= 1 << RSE::INSTANCE_VOXEL_GI;
@@ -1915,7 +1921,7 @@ void RendererSceneCull::_update_instance(Instance *p_instance) const {
 	} else if (p_instance->base_type == RSE::INSTANCE_LIGHT) {
 		pair.pair_mask |= RSE::INSTANCE_GEOMETRY_MASK;
 		pair.bvh = &p_instance->scenario->indexers[Scenario::INDEXER_GEOMETRY];
-
+		is_light_geometry_pair = true;
 		RSE::LightBakeMode bake_mode = RSG::light_storage->light_get_bake_mode(p_instance->base);
 		if (bake_mode == RSE::LIGHT_BAKE_STATIC || bake_mode == RSE::LIGHT_BAKE_DYNAMIC) {
 			pair.pair_mask |= (1 << RSE::INSTANCE_VOXEL_GI);

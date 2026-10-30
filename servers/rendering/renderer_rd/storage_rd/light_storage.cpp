@@ -374,6 +374,16 @@ bool LightStorage::light_get_allow_contact_shadows(RID p_light) const {
 	return light->allow_contact_shadows;
 }
 
+void LightStorage::light_set_extra_cull_margin(RID p_light, float p_margin, bool p_force) {
+	Light *light = light_owner.get_or_null(p_light);
+	ERR_FAIL_NULL(light);
+
+	light->extra_cull_margin = p_force ? p_margin : MAX(p_margin, light->extra_cull_margin);
+
+	light->version++;
+	light->dependency.changed_notify(Dependency::DEPENDENCY_CHANGED_LIGHT);
+}
+
 void LightStorage::light_omni_set_shadow_mode(RID p_light, RSE::LightOmniShadowMode p_mode) {
 	Light *light = light_owner.get_or_null(p_light);
 	ERR_FAIL_NULL(light);
@@ -527,6 +537,7 @@ AABB LightStorage::light_get_aabb(RID p_light) const {
 	switch (light->type) {
 		case RSE::LIGHT_SPOT: {
 			float len = light->param[RSE::LIGHT_PARAM_RANGE];
+			//len += light->extra_cull_margin;
 			float angle = Math::deg_to_rad(light->param[RSE::LIGHT_PARAM_SPOT_ANGLE]);
 
 			if (angle > Math::PI * 0.5) {
@@ -539,12 +550,13 @@ AABB LightStorage::light_get_aabb(RID p_light) const {
 		};
 		case RSE::LIGHT_OMNI: {
 			float r = light->param[RSE::LIGHT_PARAM_RANGE];
+			//r += light->extra_cull_margin;
 			return AABB(-Vector3(r, r, r), Vector3(r, r, r) * 2);
 		};
 		case RSE::LIGHT_AREA: {
 			float len = light->param[RSE::LIGHT_PARAM_RANGE];
-			float width = light->area_size.x / 2.0 + len;
-			float height = light->area_size.y / 2.0 + len;
+			float width = light->area_size.x / 2.0 + len; // + light->extra_cull_margin;
+			float height = light->area_size.y / 2.0 + len; // + light->extra_cull_margin;
 			return AABB(-Vector3(width, height, 0), Vector3(width * 2, height * 2, -len));
 		};
 		case RSE::LIGHT_DIRECTIONAL: {
@@ -1257,7 +1269,7 @@ void LightStorage::update_light_buffers(RenderDataRD *p_render_data, const Paged
 		light_instance->cull_mask = light->cull_mask;
 
 		// hook for subclass to do further processing.
-		RendererSceneRenderRD::get_singleton()->setup_added_light(type, light_transform, radius, spot_angle, area_size);
+		RendererSceneRenderRD::get_singleton()->setup_added_light(type, light_transform, radius, spot_angle, area_size, light->extra_cull_margin);
 
 		r_positional_light_count++;
 	}
